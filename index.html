@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nuestra Boda</title>
+  <meta name="description" content="Estás invitado a nuestra boda" />
+  <meta property="og:title" content="¡Nos casamos!" />
+  <meta property="og:description" content="Abre tu invitación" />
+  <meta name="theme-color" content="#F5F1EA" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============ SOBRE / PORTADA ============ -->
+  <div id="sobre" class="sobre" role="button" tabindex="0" aria-label="Abrir invitación">
+    <div class="sobre-arco a1"></div>
+    <div class="sobre-arco a2"></div>
+    <div class="sobre-contenido">
+      <p class="mini">Tienes una invitación</p>
+      <p class="sobre-nombre" id="sobreNombre">&nbsp;</p>
+      <div class="sobre-cuerpo">
+        <div class="sobre-solapa"></div>
+        <div class="sello"><span id="selloIniciales">N&N</span></div>
+      </div>
+      <p class="mini toca">Toca para abrir</p>
+    </div>
+  </div>
+
+  <!-- Botón de música -->
+  <button id="btnMusica" class="btn-musica" aria-label="Música" hidden>
+    <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  </button>
+  <audio id="audio" loop preload="none"></audio>
+
+  <main id="invitacion">
+
+    <!-- ============ 1. HERO ============ -->
+    <section class="hero">
+      <div class="arco-deco izq"></div>
+      <div class="arco-deco der"></div>
+      <p class="saludo" id="saludo">Con mucho cariño</p>
+      <p class="pases-hero" id="pasesHero"></p>
+      <p class="espaciado">Nos casamos</p>
+      <h1 class="nombres">
+        <span id="nombreNovia"></span>
+        <span class="amp">&amp;</span>
+        <span id="nombreNovio"></span>
+      </h1>
+      <svg class="ramita" viewBox="0 0 200 40" aria-hidden="true"><use href="#eucalipto"/></svg>
+      <p class="fecha-hero" id="fechaHero"></p>
+      <div class="flecha">⌄</div>
+    </section>
+
+    <!-- ============ 2. FOTO 1 ============ -->
+    <section class="seccion foto-seccion revelar">
+      <div class="marco-arco">
+        <img src="img/foto1.jpg" alt="Foto de los novios" class="foto" data-foto="1" />
+        <div class="foto-vacia"><span>Foto 1</span><small>img/foto1.jpg</small></div>
+      </div>
+      <p class="frase" id="fraseFoto1"></p>
+    </section>
+
+    <!-- ============ 3. CUENTA REGRESIVA ============ -->
+    <section class="seccion beige revelar">
+      <p class="espaciado">Faltan</p>
+      <div class="cuenta" id="cuenta">
+        <div><span id="cDias">00</span><small>Días</small></div>
+        <div><span id="cHoras">00</span><small>Horas</small></div>
+        <div><span id="cMin">00</span><small>Min</small></div>
+        <div><span id="cSeg">00</span><small>Seg</small></div>
+      </div>
+      <a class="btn-linea" id="btnCalendario" target="_blank" rel="noopener">Agregar al calendario</a>
+    </section>
+
+    <!-- ============ 4. CEREMONIA Y RECEPCIÓN ============ -->
+    <section class="seccion revelar">
+      <h2 class="titulo">Dónde y cuándo</h2>
+      <div class="lugares" id="lugares"></div>
+    </section>
+
+    <!-- ============ 5. ITINERARIO ============ -->
+    <section class="seccion beige revelar">
+      <h2 class="titulo">Itinerario</h2>
+      <ol class="itinerario" id="itinerario"></ol>
+    </section>
+
+    <!-- ============ 6. FOTO 2 ============ -->
+    <section class="seccion foto-seccion sombra-hojas revelar">
+      <div class="marco-circulo">
+        <img src="img/foto2.jpg" alt="Foto de los novios" class="foto" data-foto="2" />
+        <div class="foto-vacia"><span>Foto 2</span><small>img/foto2.jpg</small></div>
+      </div>
+      <p class="frase" id="fraseFoto2"></p>
+    </section>
+
+    <!-- ============ 7. VESTIMENTA ============ -->
+    <section class="seccion revelar">
+      <h2 class="titulo">Código de vestimenta</h2>
+      <p class="vest-tipo" id="vestTipo"></p>
+      <p class="texto" id="vestDetalle"></p>
+      <div class="paleta" id="vestColores"></div>
+    </section>
+
+    <!-- ============ 8. REGALOS ============ -->
+    <section class="seccion beige revelar" id="seccionRegalos">
+      <h2 class="titulo">Regalos</h2>
+      <p class="texto" id="regalosTexto"></p>
+      <div class="regalos" id="regalos"></div>
+    </section>
+
+    <!-- ============ 9. CONFIRMACIÓN ============ -->
+    <section class="seccion rsvp revelar" id="rsvp">
+      <h2 class="titulo">Confirma tu asistencia</h2>
+      <p class="texto">Por favor confírmanos antes del <strong id="fechaLimite"></strong></p>
+      <p class="reservados" id="reservados"></p>
+
+      <form id="formRsvp" novalidate>
+        <label>¿Quién confirma?
+          <input type="text" id="fQuien" placeholder="Tu nombre completo" required autocomplete="name" />
+        </label>
+
+        <div class="opciones-asiste">
+          <label class="opcion"><input type="radio" name="asiste" value="si" checked /><span>Sí asistiré</span></label>
+          <label class="opcion"><input type="radio" name="asiste" value="no" /><span>No podré ir</span></label>
+        </div>
+
+        <div id="bloqueAsistentes">
+          <label>¿Cuántas personas asistirán?
+            <div class="contador">
+              <button type="button" id="menos" aria-label="Menos">−</button>
+              <output id="fCantidad">1</output>
+              <button type="button" id="mas" aria-label="Más">+</button>
+            </div>
+          </label>
+          <p class="aviso-pases" id="avisoPases" hidden></p>
+          <div id="acompanantes"></div>
+        </div>
+
+        <label>Mensaje para los novios <span class="opc">(opcional)</span>
+          <textarea id="fMensaje" rows="3" placeholder="Escribe unas palabras…"></textarea>
+        </label>
+
+        <button type="submit" class="btn-principal" id="btnEnviar">Confirmar</button>
+        <p class="error" id="error" hidden></p>
+      </form>
+
+      <div class="gracias" id="gracias" hidden>
+        <svg class="ramita" viewBox="0 0 200 40" aria-hidden="true"><use href="#eucalipto"/></svg>
+        <h3 id="graciasTitulo">¡Gracias!</h3>
+        <p id="graciasTexto"></p>
+        <button class="btn-linea" id="btnEditar" type="button">Modificar respuesta</button>
+      </div>
+    </section>
+
+    <!-- ============ 10. CIERRE ============ -->
+    <footer class="cierre">
+      <p class="frase" id="fraseCierre"></p>
+      <p class="iniciales-cierre" id="inicialesCierre"></p>
+      <p class="espaciado fecha-cierre" id="fechaCierre"></p>
+    </footer>
+  </main>
+
+  <div id="demo" class="demo" hidden>Modo demostración · conecta tu hoja en config.js</div>
+
+  <!-- Ilustraciones -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="eucalipto" fill="none" stroke-linecap="round">
+        <path d="M10 22 C60 18 140 18 190 22" stroke="#D4AF6A" stroke-width="1"/>
+        <g fill="#8A9A6F" opacity=".9">
+          <ellipse cx="100" cy="20" rx="7" ry="4.2"/>
+          <ellipse cx="84" cy="13" rx="6" ry="3.6" transform="rotate(-25 84 13)"/>
+          <ellipse cx="116" cy="13" rx="6" ry="3.6" transform="rotate(25 116 13)"/>
+          <ellipse cx="72" cy="27" rx="6" ry="3.6" transform="rotate(20 72 27)"/>
+          <ellipse cx="128" cy="27" rx="6" ry="3.6" transform="rotate(-20 128 27)"/>
+          <ellipse cx="60" cy="15" rx="5" ry="3" transform="rotate(-20 60 15)"/>
+          <ellipse cx="140" cy="15" rx="5" ry="3" transform="rotate(20 140 15)"/>
+          <ellipse cx="48" cy="25" rx="4" ry="2.5" transform="rotate(15 48 25)"/>
+          <ellipse cx="152" cy="25" rx="4" ry="2.5" transform="rotate(-15 152 25)"/>
+        </g>
+      </g>
+    </defs>
+  </svg>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
