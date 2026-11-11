@@ -258,7 +258,7 @@
     // Cargar datos del invitado y registrar la apertura
     if (demo) {
       $("demo").hidden = false;
-      invitado = { nombre: codigo ? "Familia Ejemplo" : "", pases: codigo ? 4 : 0 };
+      invitado = { nombre: "Familia Ejemplo", pases: 4 };
       pintarInvitado();
     } else {
       pintarInvitado();
