@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diseña tu invitación</title>
+  <meta name="theme-color" content="#F5F1EA" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Montserrat:wght@300;400;500;600&family=Playfair+Display:wght@400;500&family=Parisienne&family=Lato:wght@300;400&family=Bodoni+Moda:wght@400;500&family=Allura&family=Jost:wght@300;400&family=Tenor+Sans&family=Alex+Brush&family=Cinzel:wght@400;500&family=Pinyon+Script&family=EB+Garamond:wght@400;500&display=swap" />
+  <link rel="stylesheet" href="disenar.css" />
+</head>
+<body class="cargando">
+
+  <div class="cargador"><span></span><span></span><span></span></div>
+
+  <div class="pantalla-error" id="pantallaError" hidden>
+    <h1>Enlace no válido</h1>
+    <p>Revisa que el enlace sea el que te enviamos o contáctanos.</p>
+  </div>
+
+  <header class="top">
+    <div>
+      <p class="top-mini">Diseña tu invitación</p>
+      <h1 id="tituloPareja">Laura &amp; Carlos</h1>
+    </div>
+    <span class="chip" id="chipEstado">✏️ Diseñando</span>
+  </header>
+
+  <div class="layout">
+    <div class="panel" id="panel">
+
+      <div class="aviso-aprobado" id="avisoAprobado" hidden>
+        <strong>✅ Tu diseño ya fue aprobado.</strong>
+        <p>Si necesitas algún cambio, escríbenos: <span class="contacto"></span></p>
+      </div>
+
+      <p class="intro">Elige cada detalle y míralo en vivo. Tus cambios se guardan solos.
+        En cada paso puedes <strong>subir imágenes de referencia</strong> si quieres algo que no esté en las opciones.
+        Cuando termines, pulsa <strong>“Enviar mi diseño”</strong>. Puedes seguir haciendo cambios hasta que lo aprobemos.</p>
+
+      <!-- 1 -->
+      <details class="paso" data-paso="datos" data-ir="hero" open>
+        <summary><span class="num">1</span> Sus datos</summary>
+        <div class="cuerpo">
+          <div class="fila2">
+            <label>Nombre de la novia<input type="text" data-campo="novia" /></label>
+            <label>Nombre del novio<input type="text" data-campo="novio" /></label>
+          </div>
+          <div class="fila2">
+            <label>Fecha de la boda<input type="date" data-campo="fecha" /></label>
+            <label>Confirmar antes del<input type="date" data-campo="fechaLimite" /></label>
+          </div>
+        </div>
+      </details>
+
+      <!-- 2 -->
+      <details class="paso" data-paso="lugares" data-ir="lugares">
+        <summary><span class="num">2</span> Ceremonia y recepción</summary>
+        <div class="cuerpo">
+          <h4>Ceremonia</h4>
+          <div class="fila2">
+            <label>Lugar<input type="text" data-campo="ceremonia.lugar" placeholder="Parroquia, jardín…" /></label>
+            <label>Hora<input type="time" data-campo="ceremonia.hora" /></label>
+          </div>
+          <label>Dirección<input type="text" data-campo="ceremonia.direccion" /></label>
+          <label>Enlace de Google Maps <span class="opc">(opcional)</span><input type="url" data-campo="ceremonia.mapa" placeholder="https://maps.app.goo.gl/…" /></label>
+          <h4>Recepción</h4>
+          <div class="fila2">
+            <label>Lugar<input type="text" data-campo="recepcion.lugar" placeholder="Salón, hacienda…" /></label>
+            <label>Hora<input type="time" data-campo="recepcion.hora" /></label>
+          </div>
+          <label>Dirección<input type="text" data-campo="recepcion.direccion" /></label>
+          <label>Enlace de Google Maps <span class="opc">(opcional)</span><input type="url" data-campo="recepcion.mapa" placeholder="https://maps.app.goo.gl/…" /></label>
+        </div>
+      </details>
+
+      <!-- 3 -->
+      <details class="paso" data-paso="fotos" data-ir="fotos">
+        <summary><span class="num">3</span> Fotos</summary>
+        <div class="cuerpo">
+          <div class="foto-editor">
+            <div class="foto-mini" id="mini1"><span>Foto 1</span></div>
+            <div>
+              <h4>Foto 1 <span class="opc">· vertical</span></h4>
+              <label class="btn-subir">Subir foto<input type="file" accept="image/*" data-subir-foto="foto1" hidden /></label>
+              <button type="button" class="btn-quitar" data-quitar-foto="foto1">Quitar</button>
+              <p class="mini-label">Forma del marco</p>
+              <div class="opciones-marco" data-opcion="marcoFoto1"></div>
+            </div>
+          </div>
+          <label>Frase bajo la foto 1<input type="text" data-campo="fraseFoto1" /></label>
+          <div class="foto-editor">
+            <div class="foto-mini" id="mini2"><span>Foto 2</span></div>
+            <div>
+              <h4>Foto 2 <span class="opc">· cuadrada</span></h4>
+              <label class="btn-subir">Subir foto<input type="file" accept="image/*" data-subir-foto="foto2" hidden /></label>
+              <button type="button" class="btn-quitar" data-quitar-foto="foto2">Quitar</button>
+              <p class="mini-label">Forma del marco</p>
+              <div class="opciones-marco" data-opcion="marcoFoto2"></div>
+            </div>
+          </div>
+          <label>Frase bajo la foto 2<input type="text" data-campo="fraseFoto2" /></label>
+        </div>
+      </details>
+
+      <!-- 4 -->
+      <details class="paso" data-paso="colores" data-ir="hero">
+        <summary><span class="num">4</span> Colores</summary>
+        <div class="cuerpo">
+          <div class="tarjetas" id="opPaletas"></div>
+          <p class="mini-label">¿Quieres ajustar algún color?</p>
+          <div class="colores-propios" id="coloresPropios"></div>
+          <button type="button" class="btn-texto" id="btnRestablecerColores">Volver a los colores de la paleta</button>
+        </div>
+      </details>
+
+      <!-- 5 -->
+      <details class="paso" data-paso="fondo" data-ir="hero">
+        <summary><span class="num">5</span> Fondo y textura</summary>
+        <div class="cuerpo"><div class="tarjetas" id="opFondos"></div></div>
+      </details>
+
+      <!-- 6 -->
+      <details class="paso" data-paso="tipografia" data-ir="hero">
+        <summary><span class="num">6</span> Tipografía</summary>
+        <div class="cuerpo"><div class="tarjetas una" id="opTipografias"></div></div>
+      </details>
+
+      <!-- 7 -->
+      <details class="paso" data-paso="decoracion" data-ir="hero">
+        <summary><span class="num">7</span> Decoración</summary>
+        <div class="cuerpo"><div class="tarjetas" id="opDecoraciones"></div></div>
+      </details>
+
+      <!-- 8 -->
+      <details class="paso" data-paso="portada" data-ir="portada">
+        <summary><span class="num">8</span> Portada (cómo se abre)</summary>
+        <div class="cuerpo"><div class="tarjetas" id="opPortadas"></div></div>
+      </details>
+
+      <!-- 9 -->
+      <details class="paso" data-paso="itinerario" data-ir="itinerario">
+        <summary><span class="num">9</span> Itinerario</summary>
+        <div class="cuerpo">
+          <div class="lista" id="listaItinerario"></div>
+          <button type="button" class="btn-texto" id="addItinerario">+ Agregar momento</button>
+        </div>
+      </details>
+
+      <!-- 10 -->
+      <details class="paso" data-paso="vestimenta" data-ir="vestimenta">
+        <summary><span class="num">10</span> Vestimenta y regalos</summary>
+        <div class="cuerpo">
+          <label>Código de vestimenta<input type="text" data-campo="vestimenta.tipo" placeholder="Formal, cóctel, playa…" /></label>
+          <label>Detalle<textarea rows="2" data-campo="vestimenta.detalle"></textarea></label>
+          <h4>Regalos</h4>
+          <label>Texto<textarea rows="2" data-campo="regalosTexto"></textarea></label>
+          <div class="lista" id="listaRegalos"></div>
+          <button type="button" class="btn-texto" id="addRegalo">+ Agregar opción de regalo</button>
+        </div>
+      </details>
+
+      <!-- 11 -->
+      <details class="paso" data-paso="cierre" data-ir="cierre">
+        <summary><span class="num">11</span> Mensaje final</summary>
+        <div class="cuerpo">
+          <label>Frase de cierre<input type="text" data-campo="fraseCierre" /></label>
+        </div>
+      </details>
+
+      <!-- 12 -->
+      <details class="paso" data-paso="general" data-ir="hero">
+        <summary><span class="num">12</span> ¿Algo más?</summary>
+        <div class="cuerpo">
+          <p class="nota">Cuéntanos cualquier idea para tu invitación: una canción, un estilo que viste, un detalle especial…</p>
+        </div>
+      </details>
+
+      <p class="contacto-pie">¿Dudas? Escríbenos: <span class="contacto"></span></p>
+    </div>
+
+    <aside class="vista" id="vista" aria-label="Vista previa">
+      <div class="vista-top">
+        <button type="button" class="btn-texto" id="btnVerPortada">↺ Ver portada</button>
+        <button type="button" class="btn-cerrar" id="btnCerrarVista" aria-label="Cerrar vista previa">✕</button>
+      </div>
+      <div class="telefono"><iframe id="frame" src="index.html?preview=1" title="Vista previa de la invitación"></iframe></div>
+    </aside>
+  </div>
+
+  <div class="barra">
+    <span class="guardado" id="guardado">Sin cambios</span>
+    <button type="button" class="btn-ver" id="btnVer">👁 Ver</button>
+    <button type="button" class="btn-enviar" id="btnEnviarDiseno">Enviar mi diseño</button>
+  </div>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-caja">
+      <p class="modal-icono">💌</p>
+      <h2 id="modalTitulo">¡Recibimos tu diseño!</h2>
+      <p id="modalTexto">Lo revisaremos y te avisaremos. Mientras no lo aprobemos, puedes seguir haciendo cambios.</p>
+      <button type="button" class="btn-enviar" id="modalCerrar">Entendido</button>
+    </div>
+  </div>
+
+  <template id="tplRef">
+    <div class="ref">
+      <p class="ref-titulo">📎 Referencias para este paso <span class="opc">(opcional)</span></p>
+      <textarea rows="2" class="ref-comentario" placeholder="Describe lo que te gustaría…"></textarea>
+      <div class="ref-imagenes"></div>
+      <label class="btn-subir chico">Subir imagen de referencia<input type="file" accept="image/*" multiple hidden class="ref-archivo" /></label>
+    </div>
+  </template>
+
+  <script src="opciones.js"></script>
+  <script src="config.js"></script>
+  <script src="disenar.js"></script>
+</body>
+</html>

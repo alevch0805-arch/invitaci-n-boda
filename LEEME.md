@@ -1,100 +1,114 @@
-# 💍 Invitación de boda digital
+# 💍 Invitaciones de boda digitales (varios clientes)
 
-Invitación web con la paleta **Colores tendencia**: blanco natural, beige arena, verde salvia, rosa empolvado, terracota, moca y dorado suave. Se conecta a una hoja de Google Sheets, donde cada invitado tiene su enlace personal y su confirmación.
+Cada pareja recibe un enlace para **diseñar su invitación**: colores, fondo y textura, tipografía, decoración, forma de las fotos, portada, sus datos, sus fotos e imágenes de referencia en cada paso. La ven en vivo mientras la diseñan. Tú lo recibes todo en una sola hoja de Google, junto con sus invitados, confirmaciones y alertas.
 
 ## 📁 Archivos
 
 | Archivo | Para qué sirve |
 |---|---|
-| `config.js` | **Aquí cambias todos los datos**: nombres, fechas, lugares, frases, regalos, etc. |
-| `img/foto1.jpg` | Foto 1 (marco en arco, vertical) |
-| `img/foto2.jpg` | Foto 2 (marco circular, cuadrada) |
+| `disenar.html` | Página donde el cliente diseña su invitación |
+| `index.html` | La invitación que reciben los invitados |
+| `opciones.js` | Catálogo de paletas, fondos, tipografías, decoraciones, marcos y portadas. Aquí agregas opciones nuevas. |
+| `config.js` | Conexión con tu hoja, tu contacto y los datos de ejemplo |
 | `apps-script/Codigo.gs` | Código para pegar en Google Sheets |
-| `index.html`, `styles.css`, `app.js` | La invitación (no hace falta tocarlos) |
 
 ---
 
-## Paso 1 · Cambiar los datos
+## Configuración inicial (una sola vez)
 
-Abre `config.js` y reemplaza los textos de ejemplo. Para las fotos, sube tus imágenes a la carpeta `img/` con los nombres `foto1.jpg` y `foto2.jpg`. Mientras no estén, se ve un espacio reservado.
+### 1. Publicar en GitHub Pages
+1. En GitHub ve a **Settings → Pages**.
+2. En *Source* elige **Deploy from a branch**, tu rama y la carpeta `/ (root)`, y guarda.
+3. Tendrás una dirección como `https://TU-USUARIO.github.io/invitaci-n-boda/`.
 
-## Paso 2 · Publicar la invitación (gratis con GitHub Pages)
+### 2. Crear la hoja central
+1. Entra a [sheets.new](https://sheets.new) y ponle un nombre, por ejemplo *Invitaciones - Mi negocio*.
+2. Ve a **Extensiones → Apps Script**, borra lo que aparezca, pega **todo** `apps-script/Codigo.gs` y guarda.
+3. Elige la función `prepararHojas` y presiona **▶ Ejecutar**. Acepta los permisos: *Revisar permisos → tu cuenta → Configuración avanzada → Ir a… → Permitir*. Pide acceso a Sheets, a Drive (para guardar fotos y referencias) y a Gmail (para avisarte por correo).
+4. Se crean las pestañas **Clientes, Invitados, Aperturas, Respuestas, Resumen y Configuración**, una carpeta en tu Drive llamada **Invitaciones de boda** y el menú **💍 Invitaciones**.
 
-1. En GitHub, entra al repositorio y ve a **Settings → Pages**.
-2. En **Source**, elige *Deploy from a branch*. Selecciona la rama `main` (o la rama donde esté la invitación) y la carpeta `/ (root)`.
-3. Guarda. En uno o dos minutos tendrás una dirección como
-   `https://TU-USUARIO.github.io/invitaci-n-boda/`
-
-## Paso 3 · Crear la hoja de invitados
-
-1. Entra a [sheets.new](https://sheets.new) para crear una hoja nueva y ponle un nombre, por ejemplo *Invitados Boda*.
-2. Menú **Extensiones → Apps Script**.
-3. Borra lo que aparezca y pega **todo** el contenido de `apps-script/Codigo.gs`. Guarda (💾).
-4. Arriba, elige la función `prepararHojas` y presiona **▶ Ejecutar**. Acepta los permisos: *Revisar permisos → tu cuenta → Configuración avanzada → Ir a (proyecto) → Permitir*.
-5. Vuelve a la hoja. Ya tendrás las pestañas **Invitados, Aperturas, Respuestas, Configuración y Resumen**, y un menú nuevo **💍 Invitación**.
-
-## Paso 4 · Conectar la hoja con la invitación
-
-1. En Apps Script: **Implementar → Nueva implementación**.
-2. Tipo: **Aplicación web**.
+### 3. Conectar
+1. En Apps Script: **Implementar → Nueva implementación → Aplicación web**.
    - Ejecutar como: **Yo**
    - Quién tiene acceso: **Cualquier usuario**
-3. **Implementar** y copia la URL. Termina en `/exec`.
-4. Pega esa URL en `config.js`:
+2. Copia la URL que termina en `/exec` y pégala en `config.js`:
    ```js
    urlHojaDeCalculo: "https://script.google.com/macros/s/XXXX/exec",
+   contactoNegocio: "WhatsApp 55 1234 5678",
    ```
-5. En la pestaña **Configuración** de la hoja, pon en `B1` la dirección de tu invitación del Paso 2.
+3. En la pestaña **Configuración**:
+   - `B1`: la dirección del Paso 1 (debe terminar en `/`)
+   - `B2`: el mensaje de WhatsApp para invitados
+   - `B3`: el mensaje de WhatsApp para clientes
+   - `B4`: tu correo para recibir avisos
 
-> Si más adelante cambias el código de Apps Script, usa **Implementar → Gestionar implementaciones → ✏️ → Versión: nueva**. Así la URL no cambia.
-
-## Paso 5 · Agregar invitados y enviar
-
-En la pestaña **Invitados** solo llenas tres columnas:
-
-| Nombre del invitado | Pases | Teléfono |
-|---|---|---|
-| Familia Pérez | 4 | 5215512345678 |
-
-- Al escribir el nombre se crean solos el **código** y el **enlace personal**. Si no aparecen, usa el menú **💍 Invitación → Generar códigos y enlaces**.
-- Escribe el teléfono **con lada de país**, sin espacios: México `52` + `1` + 10 dígitos en celulares, o `52` + 10 dígitos.
-- Haz clic en **📲 Enviar** y se abre WhatsApp con el mensaje y el enlace ya escritos. Puedes cambiar el mensaje en **Configuración → B2**.
-
-Para descargarla como Excel: **Archivo → Descargar → Microsoft Excel (.xlsx)**.
+> Si cambias el código de Apps Script más adelante, usa **Implementar → Gestionar implementaciones → ✏️ → Versión nueva**, para que la URL no cambie.
 
 ---
 
-## 🚨 Qué significan las alertas
+## Uso diario
 
-Aparecen en la columna **⚠️ Alertas** y la fila se pinta de rosa.
+### 🆕 Nuevo cliente
+En **Clientes** escribe el **nombre de la pareja** y su **WhatsApp**, con lada de país y sin espacios (ej. `5215512345678`). Se generan solos:
+- **Código** del cliente
+- **Enlace para diseñar**
+- **📲 Enviar**: abre WhatsApp con el mensaje y el enlace ya listos
+- **👁 Ver**: la invitación tal como va quedando
+
+### 🎨 El cliente diseña
+En su enlace, el cliente recorre 12 pasos y ve los cambios en vivo:
+
+1. Sus datos: nombres, fecha y fecha límite para confirmar
+2. Ceremonia y recepción
+3. Fotos: sube 2 y elige la forma del marco (arco, círculo, rectángulo o polaroid)
+4. Colores: 8 paletas o colores propios
+5. Fondo y textura: liso, degradado, papel, lino, acuarela, mármol u hojas
+6. Tipografía: clásica, romántica, moderna, minimalista o vintage
+7. Decoración: eucalipto, flores, arcos dorados, líneas o sin adornos
+8. Portada: sobre con sello, cortina o directo
+9. Itinerario
+10. Vestimenta y regalos
+11. Mensaje final
+12. ¿Algo más?
+
+En **cada paso** puede escribir comentarios y **subir imágenes de referencia**. Todo se guarda solo. Al terminar pulsa **Enviar mi diseño**.
+
+### 📩 Tú recibes
+- Un **correo** con el resumen de lo que eligió y sus comentarios.
+- Su estado cambia a **📩 Enviado** en la hoja Clientes.
+- Fotos y referencias quedan en **Drive → Invitaciones de boda → Pareja (código)**, nombradas por paso.
+- La invitación **ya tiene aplicado su diseño**. Solo ajustas a mano lo que pidieron con imágenes de referencia.
+
+### ✅ Aprobar
+Cambia el estado a **✅ Aprobado**. Desde ese momento el cliente ya no puede modificar su diseño; si necesita un cambio, te escribe. Para que pueda volver a editar, regrésalo a **✏️ Diseñando**.
+
+### 👥 Invitados
+En **Invitados** elige el **Cliente** (lista desplegable) y escribe **Nombre, Pases y Teléfono**. El código y el enlace se generan solos, y **📲 Enviar** abre WhatsApp. Cada invitado ve la invitación con el diseño de su pareja.
+
+Usa los filtros de la hoja para ver los invitados de una sola pareja. La pestaña **Resumen** muestra los totales por cliente.
+
+---
+
+## 🚨 Alertas de invitados
 
 | Alerta | Qué pasó |
 |---|---|
-| 🟠 **Compartida**: se abrió en *N* dispositivos | El invitado de esa fila reenvió su enlace. Se muestra en qué equipos se abrió (iPhone · WhatsApp, Android · Chrome…). |
-| 🔴 **Confirmó otra persona** | El nombre escrito en "¿Quién confirma?" no coincide con el del invitado. Por ejemplo, *"Carlos Ruiz" usó la invitación de Ana López*. |
-| 🔴 **Pidió N lugares (tenía M)** | Pusieron más asistentes de los pases asignados. |
-| 🟠 **Respondieron N veces** | Se confirmó más de una vez con el mismo enlace, y se muestra quiénes. |
-| 🟠 **Confirmado desde otro dispositivo** | La persona que confirmó no es la que abrió la invitación primero. |
-| 🔴 **Confirmó sin una invitación válida** | Alguien borró o cambió el código del enlace. Esto solo aparece en la pestaña **Respuestas**. |
+| 🟠 **Compartida**: se abrió en N dispositivos | El invitado reenvió su enlace. Se muestra en qué equipos se abrió. |
+| 🔴 **Confirmó otra persona** | El nombre escrito no coincide con el del invitado. |
+| 🔴 **Pidió N lugares (tenía M)** | Pusieron más asistentes de los asignados. |
+| 🟠 **Respondieron N veces** | Hubo varias confirmaciones con el mismo enlace, y se muestra quiénes. |
+| 🟠 **Confirmado desde otro dispositivo** | Quien confirmó no es quien abrió la invitación primero. |
+| 🔴 **Sin invitación válida** | Alguien cambió o borró el código. Solo aparece en la pestaña **Respuestas**. |
 
-- **Aperturas**: historial de cada vez que se abrió una invitación, con fecha, equipo y si fue un dispositivo nuevo.
-- **Respuestas**: todas las confirmaciones, incluidas las repetidas, con sus alertas.
-- **Resumen**: totales de lugares asignados, personas que asisten, pendientes e invitaciones con alertas.
+**Límite:** se sabe de quién era el enlace y qué nombre escribió quien confirmó. Si alguien solo la abre y no confirma, no se sabe quién fue.
 
-**Límite:** se sabe **de quién era el enlace** que se compartió y **el nombre que escribió** quien confirmó. Si alguien solo la abre y no confirma, se ve que se abrió en otro dispositivo, pero no el nombre de esa persona.
+## ⚙️ Opciones
 
-## ⚙️ Más pases de los asignados
+- **Más pases de los asignados**: en `config.js` pon `modoPasesExtra: "avisar"` (lo permite y te avisa) o `"bloquear"` (no lo permite).
+- **Agregar paletas o tipografías**: en `opciones.js`. Copia una línea existente y cambia los valores.
+- **Excel**: en la hoja ve a **Archivo → Descargar → Microsoft Excel (.xlsx)**.
 
-En `config.js`:
-```js
-modoPasesExtra: "avisar"    // lo permite y te avisa en la hoja (recomendado)
-modoPasesExtra: "bloquear"  // no deja elegir más de sus pases
-```
-
-## 🎵 Música (opcional)
-
-Sube un mp3, por ejemplo `musica/cancion.mp3`, y ponlo en `config.js`: `musica: "musica/cancion.mp3"`. Empieza a sonar al abrir el sobre.
-
-## 👀 Probar
-
-Sin la hoja conectada, la invitación funciona en **modo demostración**. Abre `index.html?i=DEMO` para ver cómo la recibe un invitado con 4 pases.
+## 👀 Modo demostración
+Mientras `urlHojaDeCalculo` esté vacío, todo funciona en modo demostración y se guarda solo en ese navegador:
+- `disenar.html` muestra el diseñador.
+- `index.html` muestra la invitación con lo último que se diseñó.
