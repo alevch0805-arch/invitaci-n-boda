@@ -14,7 +14,7 @@ window.CONFIG = {
   modoPasesExtra: "avisar",
 
   // Tu contacto (aparece en el diseñador para que el cliente te escriba)
-  contactoNegocio: "WhatsApp 55 0000 0000",
+  contactoNegocio: "",   // ej. "WhatsApp 55 1234 5678" (vacío = no se muestra)
 
   // ---------- Datos de ejemplo ----------
   datos: {

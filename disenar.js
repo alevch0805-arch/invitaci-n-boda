@@ -377,6 +377,10 @@
     });
     $("modalCerrar").addEventListener("click", function () { $("modal").hidden = true; });
     $$(".contacto").forEach(function (el) { el.textContent = C.contactoNegocio || ""; });
+    if (!C.contactoNegocio) {
+      document.querySelector(".contacto-pie").hidden = true;
+      $("avisoAprobado").querySelector("p").textContent = "Si necesitas algún cambio, contáctanos.";
+    }
   }
 
   function arrancar(datos, diseno, est) {
