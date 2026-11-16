@@ -365,7 +365,7 @@
     // --- Invitación real ---
     var peticion = codigo
       ? llamar({ accion: "abrir", codigo: codigo, dispositivo: dispositivo, equipo: descripcionEquipo() })
-      : llamar({ accion: "cliente", c: codigoCliente });
+      : llamar({ accion: "cliente", cl: codigoCliente });
     peticion.then(function (r) {
       if (r && r.ok) {
         if (r.nombre) invitado = { nombre: r.nombre, pases: Number(r.pases) || 0 };

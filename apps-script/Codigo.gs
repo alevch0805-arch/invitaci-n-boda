@@ -205,7 +205,7 @@ function doGet(e) {
   var r = conBloqueo(function () {
     if (p.accion === "abrir") return registrarApertura(p);
     if (p.accion === "confirmar") return registrarRespuesta(p);
-    if (p.accion === "cliente") return leerCliente(p.c);
+    if (p.accion === "cliente") return leerCliente(p.cl || p.c); // "c" está reservado por Google
     return { ok: true, mensaje: "La hoja de invitaciones está conectada correctamente 💍" };
   });
   var json = JSON.stringify(r);

@@ -402,7 +402,7 @@
       estadoGuardado("Modo demostración · se guarda en este navegador");
       return;
     }
-    llamar({ accion: "cliente", c: cliente, editar: 1 }).then(function (r) {
+    llamar({ accion: "cliente", cl: cliente, editar: 1 }).then(function (r) {
       if (!r || !r.ok) throw new Error("no encontrado");
       var borrador = null;
       try { borrador = JSON.parse(leerLS("boda_borrador_" + cliente) || "null"); } catch (e) {}

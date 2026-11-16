@@ -7,7 +7,7 @@
 window.CONFIG = {
   // URL de la "Aplicación web" de Apps Script (ver LEEME.md).
   // Mientras esté vacía, todo funciona en MODO DEMO (se guarda solo en este navegador).
-  urlHojaDeCalculo: "",
+  urlHojaDeCalculo: "https://script.google.com/macros/s/AKfycbxLCGhHJzDz6ftDWvy9VHqG0Ab98SEfyYDHcquUbiDm57ncmS8SeYegspyHEW5jJxlQ/exec",
 
   // Si un invitado pide más lugares de los asignados:
   // "avisar" -> lo permite y te marca una alerta (recomendado) · "bloquear" -> no lo permite
