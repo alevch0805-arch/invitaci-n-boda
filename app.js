@@ -290,8 +290,105 @@
   }
 
   function mostrar() {
-    aplicarDiseno(Z); pintarContenido(); pintarInvitado(); cuenta();
+    aplicarDiseno(Z); pintarContenido(); aplicarEspecial(Z.especial || {}); pintarInvitado(); cuenta();
     document.body.classList.remove("cargando");
+  }
+
+  /* ---------- Ajustes especiales (solo los pone el administrador) ---------- */
+  var fuentesCargadas = {}, archivoFuente = { id: "", listo: false };
+  function cargarGoogleFont(nombre) {
+    if (!nombre || fuentesCargadas[nombre]) return;
+    fuentesCargadas[nombre] = true;
+    var l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=" + encodeURIComponent(nombre).replace(/%20/g, "+") + ":wght@400;500;600&display=swap";
+    l.onerror = function () { // algunas letras no tienen esos grosores
+      l.href = "https://fonts.googleapis.com/css2?family=" + encodeURIComponent(nombre).replace(/%20/g, "+") + "&display=swap";
+      l.onerror = null;
+    };
+    document.head.appendChild(l);
+  }
+  function cargarArchivoFuente(id) {
+    if (!id || archivoFuente.id === id) return;
+    archivoFuente = { id: id, listo: false };
+    var desdeBase64 = function (b64) {
+      var bin = atob(b64), bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var ff = new FontFace("LetraPropia", bytes.buffer);
+      return ff.load().then(function (f) { document.fonts.add(f); archivoFuente.listo = true; });
+    };
+    if (/^data:/.test(id)) { desdeBase64(id.split(",")[1]).catch(function () {}); return; } // modo demo
+    if (!C.urlHojaDeCalculo || !window.FontFace) return;
+    llamar({ accion: "fuente", id: id }).then(function (r) { if (r && r.ok) return desdeBase64(r.data); }).catch(function () {});
+  }
+
+  function aplicarEspecial(e) {
+    var root = document.documentElement.style, b = document.body;
+    var f = e.fuentes || {};
+    if (e.archivoFuente && e.archivoFuente.id) cargarArchivoFuente(e.archivoFuente.id);
+    var ranuras = { nombres: "--nombres", titulos: "--serif", manuscrita: "--script", textos: "--sans" };
+    var respaldo = { nombres: "Georgia, serif", titulos: "Georgia, serif", manuscrita: "cursive", textos: "system-ui, sans-serif" };
+    Object.keys(ranuras).forEach(function (k) {
+      var r = f[k] || {};
+      if (r.archivo && e.archivoFuente && e.archivoFuente.id) root.setProperty(ranuras[k], '"LetraPropia", ' + respaldo[k]);
+      else if (r.google) { cargarGoogleFont(r.google); root.setProperty(ranuras[k], '"' + r.google.replace(/"/g, "") + '", ' + respaldo[k]); }
+      else if (k === "nombres") root.removeProperty("--nombres");
+    });
+
+    var a = e.ajustes || {};
+    root.setProperty("--k-nombres", (a.tamNombres || 100) / 100);
+    root.setProperty("--k-titulos", (a.tamTitulos || 100) / 100);
+    root.setProperty("--velo", ((100 - (a.textura == null ? 100 : a.textura)) / 100 * 0.9).toFixed(2));
+    b.classList.toggle("nombres-normal", a.mayusculas === false);
+
+    var d = e.deco || {};
+    function img(sel, dato) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        if (dato && dato.url) { if (el.getAttribute("src") !== dato.url) el.src = dato.url; el.hidden = false; }
+        else { el.hidden = true; el.removeAttribute("src"); }
+      });
+    }
+    var pr = d.principal || {};
+    img(".ramita-img", pr); b.classList.toggle("deco-propia", !!pr.url);
+    root.setProperty("--deco-tam", Math.round(180 * (pr.tam || 100) / 100) + "px");
+    root.setProperty("--deco-op", (pr.opacidad == null ? 100 : pr.opacidad) / 100);
+
+    var es = d.esquinaSup || {}, ei = d.esquinaInf || {};
+    img(".esquina.sup", es); img(".esquina.inf", ei);
+    b.classList.toggle("esq-sup", !!es.url);
+    root.setProperty("--esq-tam", Math.round(150 * ((es.tam || ei.tam || 100) / 100)) + "px");
+    root.setProperty("--esq-op", ((es.opacidad == null ? 100 : es.opacidad)) / 100);
+
+    var fo = d.fondo || {};
+    if (fo.url) {
+      root.setProperty("--fondo-img", 'url("' + fo.url + '")');
+      root.setProperty("--fondo-op", (fo.opacidad == null ? 40 : fo.opacidad) / 100);
+      root.setProperty("--fondo-tam", fo.modo === "repetir" ? "320px auto" : "cover");
+      root.setProperty("--fondo-rep", fo.modo === "repetir" ? "repeat" : "no-repeat");
+    } else root.setProperty("--fondo-img", "none");
+
+    var mo = d.monograma || {};
+    img(".mono", mo); b.classList.toggle("con-mono", !!mo.url);
+    root.setProperty("--mono-tam", Math.round(120 * (mo.tam || 100) / 100) + "px");
+
+    // Secciones extra
+    ["despues-foto1", "despues-itinerario", "antes-confirmacion"].forEach(function (pos) { $("extra-" + pos).innerHTML = ""; });
+    (e.secciones || []).forEach(function (s, i) {
+      var cont = $("extra-" + (s.posicion || "antes-confirmacion"));
+      if (!cont || !(s.titulo || s.texto || (s.items || []).length || (s.imagenes || []).length)) return;
+      var html = '<section class="seccion extra revelar visible' + (s.fondoAlterno ? " beige" : "") + '" data-seccion="extra' + i + '">' +
+        (s.titulo ? '<h2 class="titulo">' + esc(s.titulo) + "</h2>" : "");
+      if (s.texto) html += '<p class="texto texto-extra">' + esc(s.texto) + "</p>";
+      if (s.tipo === "lista" && (s.items || []).length) {
+        html += '<ul class="lista-extra">' + s.items.filter(function (it) { return it.nombre; }).map(function (it) {
+          return "<li><strong>" + esc(it.nombre) + "</strong>" + (it.rol ? "<span>" + esc(it.rol) + "</span>" : "") + "</li>";
+        }).join("") + "</ul>";
+      }
+      if (s.tipo === "galeria" && (s.imagenes || []).length) {
+        html += '<div class="galeria">' + s.imagenes.map(function (u) { return '<img src="' + esc(u) + '" alt="" loading="lazy" />'; }).join("") + "</div>";
+      }
+      cont.insertAdjacentHTML("beforeend", html + "</section>");
+    });
   }
 
   /* ---------- Inicio ---------- */

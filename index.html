@@ -28,9 +28,10 @@
       <p class="sobre-nombre" id="sobreNombre">&nbsp;</p>
       <div class="sobre-cuerpo">
         <div class="sobre-solapa"></div>
-        <div class="sello"><span id="selloIniciales">L&C</span></div>
+        <div class="sello"><span id="selloIniciales">L&C</span><img class="mono" alt="" hidden /></div>
       </div>
       <p class="cortina-iniciales" id="cortinaIniciales"></p>
+      <img class="mono mono-cortina" alt="" hidden />
       <p class="mini toca">Toca para abrir</p>
     </div>
   </div>
@@ -41,6 +42,7 @@
   <audio id="audio" loop preload="none"></audio>
 
   <main id="invitacion">
+    <img class="esquina sup izq" alt="" hidden /><img class="esquina sup der" alt="" hidden />
 
     <!-- 1. HERO -->
     <section class="hero" data-seccion="hero">
@@ -54,7 +56,7 @@
         <span class="amp">&amp;</span>
         <span id="nombreNovio"></span>
       </h1>
-      <svg class="ramita" viewBox="0 0 200 40" aria-hidden="true"><use href="#deco-eucalipto"/></svg>
+      <svg class="ramita" viewBox="0 0 200 40" aria-hidden="true"><use href="#deco-eucalipto"/></svg><img class="ramita-img" alt="" hidden />
       <p class="fecha-hero" id="fechaHero"></p>
       <div class="flecha">⌄</div>
     </section>
@@ -67,6 +69,7 @@
       </div>
       <p class="frase" id="fraseFoto1"></p>
     </section>
+    <div id="extra-despues-foto1"></div>
 
     <!-- 3. CUENTA REGRESIVA -->
     <section class="seccion beige revelar" data-seccion="cuenta">
@@ -91,6 +94,7 @@
       <h2 class="titulo">Itinerario</h2>
       <ol class="itinerario" id="itinerario"></ol>
     </section>
+    <div id="extra-despues-itinerario"></div>
 
     <!-- 6. FOTO 2 -->
     <section class="seccion foto-seccion sombra-hojas revelar" id="secFoto2" data-seccion="foto2">
@@ -119,6 +123,8 @@
       <p class="texto" id="regalosTexto"></p>
       <div class="regalos" id="regalos"></div>
     </section>
+
+    <div id="extra-antes-confirmacion"></div>
 
     <!-- 9. CONFIRMACIÓN -->
     <section class="seccion rsvp revelar" id="rsvp">
@@ -153,17 +159,19 @@
       </form>
 
       <div class="gracias" id="gracias" hidden>
-        <svg class="ramita" viewBox="0 0 200 40" aria-hidden="true"><use href="#deco-eucalipto"/></svg>
+        <svg class="ramita" viewBox="0 0 200 40" aria-hidden="true"><use href="#deco-eucalipto"/></svg><img class="ramita-img" alt="" hidden />
         <h3 id="graciasTitulo">¡Gracias!</h3>
         <p id="graciasTexto"></p>
         <button class="btn-linea" id="btnEditar" type="button">Modificar respuesta</button>
       </div>
+      <img class="esquina inf izq" alt="" hidden /><img class="esquina inf der" alt="" hidden />
     </section>
 
     <!-- 10. CIERRE -->
     <footer class="cierre" data-seccion="cierre">
       <p class="frase" id="fraseCierre"></p>
       <p class="iniciales-cierre" id="inicialesCierre"></p>
+      <img class="mono mono-cierre" alt="" hidden />
       <p class="espaciado fecha-cierre" id="fechaCierre"></p>
     </footer>
   </main>

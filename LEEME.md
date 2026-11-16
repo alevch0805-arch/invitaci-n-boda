@@ -112,3 +112,20 @@ Usa los filtros de la hoja para ver los invitados de una sola pareja. La pestañ
 Mientras `urlHojaDeCalculo` esté vacío, todo funciona en modo demostración y se guarda solo en ese navegador:
 - `disenar.html` muestra el diseñador.
 - `index.html` muestra la invitación con lo último que se diseñó.
+
+---
+
+## ⭐ Modo administrador (solo tú)
+
+En la hoja **Clientes**, la última columna **"⭐ Editar como admin"** abre el diseñador de esa pareja con un paso extra, **⭐ Ajustes especiales**:
+
+- **🔤 Tipos de letra:** cualquier letra de Google Fonts por nombre, para nombres, títulos, letra manuscrita y textos. También puedes **subir un archivo de letra** (.ttf, .otf, .woff) que te mande el cliente, y elegir si los nombres van en mayúsculas.
+- **🌸 Decoraciones propias:** adorno principal, esquinas de arriba y de abajo, imagen de fondo y monograma, con controles de tamaño y transparencia. Usa PNG con fondo transparente.
+- **🎨 Ajustes finos:** tamaño de nombres y títulos, intensidad de la textura y colores exactos con código (#C0643C) en el paso 4.
+- **📝 Secciones extra:** texto (hospedaje, nota), lista (padrinos) o galería de fotos, eligiendo dónde aparecen.
+
+Cómo funciona:
+- La clave está en **Configuración → B6**. Solo quien la tenga ve el modo administrador. No la compartas; si alguien la ve, cámbiala por otra.
+- Estos ajustes solo los cambias tú: aunque el cliente siga editando su diseño, no se pierden.
+- Como administrador puedes editar **aunque el diseño ya esté aprobado**.
+- **No edites al mismo tiempo que el cliente**, porque lo último que se guarda es lo que queda.

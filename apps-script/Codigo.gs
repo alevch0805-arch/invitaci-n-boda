@@ -14,9 +14,9 @@ var HOJA_RESUMEN = "Resumen";
 var CARPETA_RAIZ = "Invitaciones de boda";
 
 // Columnas de "Clientes"
-var CC = { codigo: 1, pareja: 2, contacto: 3, estado: 4, disenar: 5, enviar: 6, ver: 7, carpeta: 8, actualizado: 9, notas: 10, diseno: 11, datos: 12 };
+var CC = { codigo: 1, pareja: 2, contacto: 3, estado: 4, disenar: 5, enviar: 6, ver: 7, carpeta: 8, actualizado: 9, notas: 10, diseno: 11, datos: 12, admin: 13 };
 var ENC_CLI = ["Código", "Pareja", "WhatsApp del cliente", "Estado del diseño", "Enlace para diseñar", "Enviar al cliente",
-  "Ver invitación", "Carpeta (fotos y referencias)", "Última actualización", "Notas", "Diseño (no editar)", "Datos (no editar)"];
+  "Ver invitación", "Carpeta (fotos y referencias)", "Última actualización", "Notas", "Diseño (no editar)", "Datos (no editar)", "⭐ Editar como admin"];
 var ESTADOS = ["✏️ Diseñando", "📩 Enviado", "✅ Aprobado"];
 
 // Columnas de "Invitados"
@@ -77,7 +77,7 @@ function prepararHojas() {
   cli.getRange(1, 1, 1, ENC_CLI.length).setValues([ENC_CLI]);
   estiloEncabezado(cli, ENC_CLI.length);
   cli.setFrozenRows(1); cli.setFrozenColumns(2);
-  [80, 200, 150, 130, 300, 130, 90, 150, 150, 220, 90, 90].forEach(function (w, i) { cli.setColumnWidth(i + 1, w); });
+  [80, 200, 150, 130, 300, 130, 90, 150, 150, 220, 90, 90, 140].forEach(function (w, i) { cli.setColumnWidth(i + 1, w); });
   cli.getRange(2, CC.pareja, cli.getMaxRows() - 1, 2).setBackground("#FFFDF8");
   cli.getRange(2, CC.contacto, cli.getMaxRows() - 1, 1).setNumberFormat("@");
   cli.getRange(2, CC.estado, cli.getMaxRows() - 1, 1).setDataValidation(
@@ -146,7 +146,7 @@ function prepararHojas() {
 }
 
 /* ================= CÓDIGOS Y ENLACES ================= */
-function generarTodo(silencioso) { generarClientes(true); generarEnlaces(true); if (silencioso !== true) SpreadsheetApp.getActive().toast("Códigos y enlaces generados.", "💍", 4); }
+function generarTodo(silencioso) { asegurarClave(); generarClientes(true); generarEnlaces(true); if (silencioso !== true) SpreadsheetApp.getActive().toast("Códigos y enlaces generados.", "💍", 4); }
 
 function generarClientes(silencioso) {
   var cli = SpreadsheetApp.getActive().getSheetByName(HOJA_CLI);
@@ -166,7 +166,30 @@ function generarClientes(silencioso) {
     cli.getRange(fila, CC.enviar).setFormula('=IF(A' + fila + '="","",HYPERLINK("https://wa.me/"&REGEXREPLACE(TO_TEXT(C' + fila + '),"\\D","")&"?text="&ENCODEURL(' +
       'SUBSTITUTE(SUBSTITUTE(' + cfg + '$B$3,"{pareja}",B' + fila + '),"{enlace}",E' + fila + ')),"📲 Enviar"))');
     cli.getRange(fila, CC.ver).setFormula('=IF(A' + fila + '="","",HYPERLINK(' + cfg + '$B$1&"?c="&A' + fila + ',"👁 Ver"))');
+    cli.getRange(fila, CC.admin).setFormula('=IF(OR(A' + fila + '="",' + cfg + '$B$6=""),"",HYPERLINK(' + cfg + '$B$1&"disenar.html?c="&A' + fila +
+      '&"&admin="&' + cfg + '$B$6,"⭐ Editar"))');
   }
+  if (!cli.getRange(1, CC.admin).getValue()) {
+    cli.getRange(1, CC.admin).setValue(ENC_CLI[CC.admin - 1]);
+    estiloEncabezado(cli, ENC_CLI.length);
+    cli.setColumnWidth(CC.admin, 140);
+  }
+}
+
+/* ================= ADMINISTRADOR ================= */
+// La clave vive SOLO en Configuración!B6 (nunca en el código, que es público)
+function asegurarClave() {
+  var cfg = SpreadsheetApp.getActive().getSheetByName(HOJA_CFG);
+  if (!cfg.getRange("A6").getValue()) cfg.getRange("A6").setValue("Clave de administrador").setFontWeight("bold").setFontColor(COLORES.moca);
+  if (!String(cfg.getRange("B6").getValue()).trim()) {
+    var letras = "abcdefghijkmnpqrstuvwxyz23456789", k = "";
+    for (var i = 0; i < 16; i++) k += letras.charAt(Math.floor(Math.random() * letras.length));
+    cfg.getRange("B6").setValue(k);
+  }
+}
+function esAdmin(clave) {
+  var k = String(SpreadsheetApp.getActive().getSheetByName(HOJA_CFG).getRange("B6").getValue() || "").trim();
+  return !!(k && k.length >= 8 && String(clave || "").trim() === k);
 }
 
 function generarEnlaces(silencioso) {
@@ -205,7 +228,8 @@ function doGet(e) {
   var r = conBloqueo(function () {
     if (p.accion === "abrir") return registrarApertura(p);
     if (p.accion === "confirmar") return registrarRespuesta(p);
-    if (p.accion === "cliente") return leerCliente(p.cl || p.c); // "c" está reservado por Google
+    if (p.accion === "cliente") return leerCliente(p.cl || p.c, p.admin); // "c" está reservado por Google
+    if (p.accion === "fuente") return servirFuente(p.id);
     return { ok: true, mensaje: "La hoja de invitaciones está conectada correctamente 💍" };
   });
   var json = JSON.stringify(r);
@@ -254,18 +278,24 @@ function buscarCliente(codigo) {
 }
 function parsear(v) { try { return v ? JSON.parse(v) : null; } catch (e) { return null; } }
 
-function leerCliente(codigo) {
+function leerCliente(codigo, clave) {
   var c = buscarCliente(codigo);
   if (!c) return { ok: false, error: "Cliente no encontrado" };
-  return { ok: true, codigo: c.codigo, pareja: c.pareja, estado: c.estado, diseno: c.diseno, datos: c.datos, datosGuardados: !!c.datos };
+  return { ok: true, codigo: c.codigo, pareja: c.pareja, estado: c.estado, diseno: c.diseno, datos: c.datos, datosGuardados: !!c.datos,
+    admin: clave ? esAdmin(clave) : false };
 }
 
 function guardarDiseno(p) {
   var c = buscarCliente(p.c);
   if (!c) return { ok: false, error: "Cliente no encontrado" };
-  if (c.estado.indexOf("Aprobado") !== -1) return { ok: false, error: "El diseño ya fue aprobado", estado: c.estado };
+  var admin = esAdmin(p.admin);
+  if (!admin && c.estado.indexOf("Aprobado") !== -1) return { ok: false, error: "El diseño ya fue aprobado", estado: c.estado };
   var cli = SpreadsheetApp.getActive().getSheetByName(HOJA_CLI);
-  var dis = JSON.stringify(p.diseno || {}), dat = JSON.stringify(p.datos || {});
+  p.diseno = p.diseno || {};
+  // Los ajustes especiales solo los cambia el administrador
+  if (!admin) { if (c.diseno && c.diseno.especial) p.diseno.especial = c.diseno.especial; else delete p.diseno.especial; }
+  if (admin) p.enviar = false;
+  var dis = JSON.stringify(p.diseno), dat = JSON.stringify(p.datos || {});
   if (dis.length > 45000 || dat.length > 45000) return { ok: false, error: "Diseño demasiado grande" };
   cli.getRange(c.fila, CC.diseno, 1, 2).setValues([[dis, dat]]);
   cli.getRange(c.fila, CC.actualizado).setValue(new Date());
@@ -321,16 +351,45 @@ function carpetaCliente(c) {
 function subirImagen(p) {
   var c = buscarCliente(p.c);
   if (!c) return { ok: false, error: "Cliente no encontrado" };
-  if (c.estado.indexOf("Aprobado") !== -1) return { ok: false, error: "El diseño ya fue aprobado" };
+  var admin = esAdmin(p.admin);
+  if (!admin && c.estado.indexOf("Aprobado") !== -1) return { ok: false, error: "El diseño ya fue aprobado" };
+  var soloAdmin = { deco: 1, fuente: 1, galeria: 1 };
+  if (soloAdmin[p.tipo] && !admin) return { ok: false, error: "No autorizado" };
   var bytes = Utilities.base64Decode(p.data);
-  if (bytes.length > 8 * 1024 * 1024) return { ok: false, error: "Imagen demasiado grande" };
+  if (bytes.length > 8 * 1024 * 1024) return { ok: false, error: "Archivo demasiado grande" };
   var carpeta = conBloqueo(function () { return carpetaCliente(c); });
   if (carpeta.ok === false) return carpeta;
-  var fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HHmm");
-  var nombre = (p.tipo === "referencia" ? "Referencia - " + (p.seccion || "General") : (p.tipo === "foto1" ? "Foto 1" : "Foto 2")) + " - " + fecha + ".jpg";
-  var archivo = carpeta.createFile(Utilities.newBlob(bytes, "image/jpeg", nombre));
+  var fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HHmmss");
+  var tipos = { referencia: "Referencia - " + (p.seccion || "General"), foto1: "Foto 1", foto2: "Foto 2",
+    deco: "Decoración - " + (p.seccion || ""), galeria: "Galería", fuente: "Letra" };
+  var mime = "image/jpeg", ext = ".jpg";
+  if (p.tipo === "fuente") {
+    ext = "." + String(p.nombre || "").split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "");
+    if ([".ttf", ".otf", ".woff", ".woff2"].indexOf(ext) === -1) return { ok: false, error: "Formato de letra no válido" };
+    mime = "application/octet-stream";
+  } else if (p.mime === "image/png") { mime = "image/png"; ext = ".png"; }
+  var nombre = (tipos[p.tipo] || "Archivo") + " - " + fecha + ext;
+  var archivo = carpeta.createFile(Utilities.newBlob(bytes, mime, nombre));
+  if (p.tipo === "fuente") return { ok: true, id: archivo.getId() };
   try { archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
-  return { ok: true, id: archivo.getId(), url: "https://drive.google.com/thumbnail?id=" + archivo.getId() + "&sz=w1800" };
+  var url = mime === "image/png" ? "https://lh3.googleusercontent.com/d/" + archivo.getId() + "=s0"
+    : "https://drive.google.com/thumbnail?id=" + archivo.getId() + "&sz=w1800";
+  return { ok: true, id: archivo.getId(), url: url };
+}
+
+/* Entrega un archivo de letra subido por el administrador (solo de la carpeta de invitaciones) */
+function servirFuente(id) {
+  try {
+    var f = DriveApp.getFileById(String(id || ""));
+    if (f.getName().indexOf("Letra - ") !== 0) return { ok: false, error: "No es una letra" };
+    var raiz = carpetaRaiz().getId(), dentro = false, padres = f.getParents();
+    while (padres.hasNext()) {
+      var pp = padres.next().getParents();
+      while (pp.hasNext()) if (pp.next().getId() === raiz) dentro = true;
+    }
+    if (!dentro) return { ok: false, error: "No autorizado" };
+    return { ok: true, data: Utilities.base64Encode(f.getBlob().getBytes()) };
+  } catch (e) { return { ok: false, error: "No encontrada" }; }
 }
 
 /* ================= INVITADOS ================= */

@@ -4,7 +4,10 @@
   var $ = function (id) { return document.getElementById(id); };
   var $$ = function (sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); };
 
-  var cliente = (new URLSearchParams(location.search).get("c") || "DEMO").trim().toUpperCase();
+  var parametros = new URLSearchParams(location.search);
+  var cliente = (parametros.get("c") || "DEMO").trim().toUpperCase();
+  var claveAdmin = (parametros.get("admin") || "").trim();
+  var esAdmin = false; // lo confirma la hoja de Google
   var demo = !C.urlHojaDeCalculo;
   var D = JSON.parse(JSON.stringify(C.datos));
   var Z = JSON.parse(JSON.stringify(C.diseno));
@@ -91,7 +94,7 @@
       guardarLS("boda_demo_" + cliente, JSON.stringify({ datos: D, diseno: Z, estado: nuevoEstado }));
       p = Promise.resolve({ ok: true, estado: nuevoEstado });
     } else {
-      p = enviarPost({ accion: "guardar", c: cliente, datos: D, diseno: Z, enviar: !!enviar });
+      p = enviarPost({ accion: "guardar", c: cliente, datos: D, diseno: Z, enviar: !!enviar && !esAdmin, admin: esAdmin ? claveAdmin : "" });
     }
     return p.then(function (r) {
       guardando = false;
@@ -114,7 +117,11 @@
     estado = String(e || "diseñando").toLowerCase();
     var chip = $("chipEstado");
     chip.className = "chip";
-    if (estado.indexOf("aprob") !== -1) {
+    if (esAdmin) {
+      chip.textContent = "⭐ Admin · " + (estado.indexOf("aprob") !== -1 ? "Aprobado" : estado.indexOf("enviad") !== -1 ? "Enviado" : "Diseñando");
+      chip.classList.add("enviado");
+      $("btnEnviarDiseno").textContent = "Guardar ahora";
+    } else if (estado.indexOf("aprob") !== -1) {
       chip.textContent = "✅ Aprobado"; chip.classList.add("aprobado");
       soloLectura = true; document.body.classList.add("solo-lectura");
       $("avisoAprobado").hidden = false; $("btnEnviarDiseno").disabled = true;
@@ -201,12 +208,24 @@
   function pintarColoresPropios() {
     var col = coloresActuales();
     $("coloresPropios").innerHTML = Object.keys(O.nombresColores).map(function (k) {
-      return '<label class="color-propio"><input type="color" data-color="' + k + '" value="' + col[k] + '" />' + esc(O.nombresColores[k]) + "</label>";
+      return '<label class="color-propio"><input type="color" data-color="' + k + '" value="' + col[k] + '" />' + esc(O.nombresColores[k]) +
+        (esAdmin ? '<input type="text" class="hex" data-hex="' + k + '" value="' + col[k] + '" maxlength="7" aria-label="Código de color" />' : "") + "</label>";
     }).join("");
+    $$("[data-hex]").forEach(function (inp) {
+      inp.addEventListener("input", function () {
+        var v = inp.value.trim(); if (v.charAt(0) !== "#") v = "#" + v;
+        if (!/^#[0-9a-fA-F]{6}$/.test(v)) return;
+        Z.colores = Z.colores || {}; Z.colores[inp.dataset.hex] = v;
+        var picker = document.querySelector('[data-color="' + inp.dataset.hex + '"]'); if (picker) picker.value = v;
+        $$("#opPaletas .tarjeta").forEach(function (t) { t.classList.remove("activa"); });
+        marcarCambio();
+      });
+    });
     $$("[data-color]").forEach(function (inp) {
       inp.addEventListener("input", function () {
         Z.colores = Z.colores || {};
         Z.colores[inp.dataset.color] = inp.value;
+        var hx = document.querySelector('[data-hex="' + inp.dataset.color + '"]'); if (hx) hx.value = inp.value;
         $$("#opPaletas .tarjeta").forEach(function (t) { t.classList.remove("activa"); });
         marcarCambio();
       });
@@ -252,7 +271,7 @@
   }
 
   /* ---------- Imágenes ---------- */
-  function reducir(archivo, max) {
+  function reducir(archivo, max, formato) {
     return new Promise(function (ok, falla) {
       var lector = new FileReader();
       lector.onerror = falla;
@@ -264,7 +283,7 @@
           var c = document.createElement("canvas");
           c.width = Math.round(img.width * e); c.height = Math.round(img.height * e);
           c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-          ok(c.toDataURL("image/jpeg", 0.85));
+          ok(formato === "png" ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.85));
         };
         img.src = lector.result;
       };
@@ -272,9 +291,11 @@
     });
   }
   function subir(archivo, tipo, seccion, max) {
-    return reducir(archivo, max).then(function (dataUrl) {
+    var png = tipo === "deco" && /png|webp|gif|svg/.test(archivo.type);
+    return reducir(archivo, max, png ? "png" : "jpg").then(function (dataUrl) {
       if (demo) return { ok: true, url: dataUrl };
-      return enviarPost({ accion: "subir", c: cliente, tipo: tipo, seccion: seccion, nombre: archivo.name, data: dataUrl.split(",")[1] });
+      return enviarPost({ accion: "subir", c: cliente, tipo: tipo, seccion: seccion, nombre: archivo.name,
+        mime: png ? "image/png" : "image/jpeg", data: dataUrl.split(",")[1], admin: esAdmin ? claveAdmin : "" });
     }).then(function (r) {
       if (!r || !r.ok) throw new Error((r && r.error) || "Error al subir");
       return r.url;
@@ -308,7 +329,7 @@
   /* ---------- Referencias por paso ---------- */
   function agregarReferencias() {
     Z.referencias = Z.referencias || {};
-    $$(".paso").forEach(function (paso) {
+    $$(".paso:not(.paso-admin)").forEach(function (paso) {
       var clave = paso.dataset.paso;
       var nodo = $("tplRef").content.cloneNode(true);
       var ref = nodo.querySelector(".ref");
@@ -345,6 +366,227 @@
     });
   }
 
+  /* ---------- ⭐ Ajustes especiales (solo administrador) ---------- */
+  var FUENTES_SUGERIDAS = ["Dancing Script", "Cinzel Decorative", "Italiana", "Playfair Display SC", "Sacramento", "Tangerine",
+    "Cormorant SC", "Marcellus", "Rouge Script", "Mrs Saint Delafield", "Petit Formal Script", "Monsieur La Doulaise",
+    "Bellefair", "Josefin Sans", "Raleway", "Libre Baskerville", "Lora", "Quicksand", "Satisfy", "Pacifico",
+    "Great Vibes", "Parisienne", "Allura", "Pinyon Script", "Alex Brush", "Montserrat", "Lato", "Jost", "Cinzel", "Bodoni Moda"];
+
+  function construirAdmin() {
+    var paso = $("pasoAdmin");
+    paso.hidden = false;
+    var E = Z.especial;
+    E.fuentes = E.fuentes || {}; E.deco = E.deco || {}; E.ajustes = E.ajustes || {}; E.secciones = E.secciones || [];
+
+    var cuerpo = paso.querySelector(".cuerpo");
+    var ranuras = [["nombres", "Nombres de los novios"], ["titulos", "Títulos"], ["manuscrita", "Letra manuscrita (&, iniciales, saludo)"], ["textos", "Textos"]];
+    var decos = [["principal", "Adorno principal", "Reemplaza la ramita bajo los nombres"], ["esquinaSup", "Esquinas de arriba", "Se pone en la esquina izquierda y se refleja a la derecha"],
+      ["esquinaInf", "Esquinas de abajo", "Al final, antes del cierre"], ["fondo", "Imagen de fondo", "Detrás de toda la invitación"],
+      ["monograma", "Monograma / logo", "En el sello del sobre, la cortina y el cierre"]];
+
+    cuerpo.innerHTML =
+      '<p class="nota">Solo tú ves este paso. Estos ajustes se aplican únicamente a esta pareja y el cliente no puede cambiarlos.</p>' +
+
+      '<h4>🔤 Tipos de letra</h4>' +
+      '<p class="nota">Escribe el nombre exacto de cualquier letra de <a href="https://fonts.google.com" target="_blank" rel="noopener">Google Fonts</a>. Déjalo vacío para usar la del paso 6.</p>' +
+      '<datalist id="listaFuentes">' + FUENTES_SUGERIDAS.map(function (f) { return '<option value="' + f + '">'; }).join("") + "</datalist>" +
+      ranuras.map(function (r) {
+        var v = E.fuentes[r[0]] || {};
+        return '<div class="fila-fuente"><label>' + r[1] + '<input type="text" list="listaFuentes" data-fuente="' + r[0] + '" value="' + esc(v.google || "") + '" placeholder="Ej. Dancing Script" /></label>' +
+          '<label class="check"><input type="checkbox" data-fuente-archivo="' + r[0] + '"' + (v.archivo ? " checked" : "") + ' /> Usar mi archivo</label></div>';
+      }).join("") +
+      '<div class="archivo-fuente"><span id="nombreArchivoFuente">' + esc((E.archivoFuente && E.archivoFuente.nombre) || "Sin archivo de letra") + '</span>' +
+      '<label class="btn-subir chico">Subir archivo de letra (.ttf .otf .woff)<input type="file" accept=".ttf,.otf,.woff,.woff2" hidden id="inpFuente" /></label>' +
+      '<button type="button" class="btn-quitar" id="quitarFuente">Quitar</button></div>' +
+      '<label class="check"><input type="checkbox" id="chkMayus"' + (E.ajustes.mayusculas === false ? "" : " checked") + ' /> Nombres en MAYÚSCULAS</label>' +
+
+      '<h4>🌸 Decoraciones propias</h4>' +
+      '<p class="nota">Usa imágenes PNG con fondo transparente para que se vean integradas.</p>' +
+      decos.map(function (d) {
+        var v = E.deco[d[0]] || {};
+        var controles = d[0] === "fondo"
+          ? deslizador("deco." + d[0] + ".opacidad", "Transparencia", v.opacidad == null ? 40 : v.opacidad, 5, 100) +
+            '<label>Cómo se acomoda<select data-ruta="deco.fondo.modo"><option value="cubrir"' + (v.modo !== "repetir" ? " selected" : "") + '>Cubrir todo</option><option value="repetir"' + (v.modo === "repetir" ? " selected" : "") + '>Repetir como textura</option></select></label>'
+          : deslizador("deco." + d[0] + ".tam", "Tamaño", v.tam || 100, 30, 250) +
+            (d[0] !== "monograma" ? deslizador("deco." + d[0] + ".opacidad", "Transparencia", v.opacidad == null ? 100 : v.opacidad, 10, 100) : "");
+        return '<div class="deco-item" data-deco="' + d[0] + '"><div class="deco-mini"' + (v.url ? ' style="background-image:url(\'' + esc(v.url) + '\')"' : "") + '></div><div>' +
+          '<strong>' + d[1] + '</strong><p class="nota">' + d[2] + '</p>' +
+          '<label class="btn-subir chico">Subir imagen<input type="file" accept="image/*" hidden data-subir-deco="' + d[0] + '" /></label>' +
+          '<button type="button" class="btn-quitar" data-quitar-deco="' + d[0] + '">Quitar</button>' + controles + "</div></div>";
+      }).join("") +
+
+      '<h4>🎨 Ajustes finos</h4>' +
+      deslizador("ajustes.tamNombres", "Tamaño de los nombres", E.ajustes.tamNombres || 100, 50, 170) +
+      deslizador("ajustes.tamTitulos", "Tamaño de los títulos", E.ajustes.tamTitulos || 100, 60, 160) +
+      deslizador("ajustes.textura", "Intensidad de la textura del fondo", E.ajustes.textura == null ? 100 : E.ajustes.textura, 0, 100) +
+      '<p class="nota">Los colores exactos con código (#C0643C) se escriben en el paso 4.</p>' +
+
+      '<h4>📝 Secciones extra</h4>' +
+      '<div id="listaSecciones" class="lista"></div>' +
+      '<div class="botones-secciones"><button type="button" class="btn-texto" data-nueva="texto">+ Texto (hospedaje, nota…)</button>' +
+      '<button type="button" class="btn-texto" data-nueva="lista">+ Lista (padrinos…)</button>' +
+      '<button type="button" class="btn-texto" data-nueva="galeria">+ Galería de fotos</button></div>';
+
+    function deslizador(ruta, texto, valor, min, max) {
+      return '<label class="deslizador">' + texto + ' <output>' + valor + '%</output><input type="range" min="' + min + '" max="' + max + '" value="' + valor + '" data-ruta="' + ruta + '" /></label>';
+    }
+
+    // Fuentes
+    $$("[data-fuente]", cuerpo).forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var k = inp.dataset.fuente; E.fuentes[k] = E.fuentes[k] || {};
+        E.fuentes[k].google = inp.value.trim(); marcarCambio(); irA("hero");
+      });
+    });
+    $$("[data-fuente-archivo]", cuerpo).forEach(function (chk) {
+      chk.addEventListener("change", function () {
+        var k = chk.dataset.fuenteArchivo; E.fuentes[k] = E.fuentes[k] || {};
+        E.fuentes[k].archivo = chk.checked; marcarCambio();
+      });
+    });
+    $("inpFuente").addEventListener("change", function () {
+      var f = this.files[0], inp = this; if (!f) return;
+      var etiqueta = $("nombreArchivoFuente"); etiqueta.textContent = "Subiendo…";
+      var lector = new FileReader();
+      lector.onload = function () {
+        var dataUrl = lector.result;
+        var p = demo ? Promise.resolve({ ok: true, id: dataUrl })
+          : enviarPost({ accion: "subir", c: cliente, tipo: "fuente", nombre: f.name, data: dataUrl.split(",")[1], admin: claveAdmin });
+        p.then(function (r) {
+          if (!r || !r.ok) throw new Error((r && r.error) || "Error");
+          E.archivoFuente = { id: r.id, nombre: f.name };
+          etiqueta.textContent = f.name;
+          if (!Object.keys(E.fuentes).some(function (k) { return E.fuentes[k] && E.fuentes[k].archivo; })) {
+            E.fuentes.nombres = E.fuentes.nombres || {}; E.fuentes.nombres.archivo = true;
+            var chk = cuerpo.querySelector('[data-fuente-archivo="nombres"]'); if (chk) chk.checked = true;
+          }
+          marcarCambio(); irA("hero");
+        }).catch(function (e) { etiqueta.textContent = "No se pudo subir: " + e.message; })
+          .finally(function () { inp.value = ""; });
+      };
+      lector.readAsDataURL(f);
+    });
+    $("quitarFuente").addEventListener("click", function () {
+      delete E.archivoFuente; $("nombreArchivoFuente").textContent = "Sin archivo de letra"; marcarCambio();
+    });
+    $("chkMayus").addEventListener("change", function () { E.ajustes.mayusculas = this.checked; marcarCambio(); irA("hero"); });
+
+    // Deslizadores y selects con ruta
+    $$("[data-ruta]", cuerpo).forEach(function (el) {
+      el.addEventListener("input", function () {
+        var partes = el.dataset.ruta.split("."), o = E;
+        for (var i = 0; i < partes.length - 1; i++) { o[partes[i]] = o[partes[i]] || {}; o = o[partes[i]]; }
+        o[partes[partes.length - 1]] = el.type === "range" ? Number(el.value) : el.value;
+        var out = el.parentNode.querySelector("output"); if (out) out.textContent = el.value + "%";
+        marcarCambio();
+      });
+    });
+
+    // Decoraciones
+    $$("[data-subir-deco]", cuerpo).forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var f = inp.files[0]; if (!f) return;
+        var k = inp.dataset.subirDeco, item = inp.closest(".deco-item"), boton = inp.parentNode;
+        boton.classList.add("ocupado"); boton.firstChild.textContent = "Subiendo…";
+        subir(f, k === "fondo" ? "galeria" : "deco", k, k === "fondo" ? 2000 : 1400).then(function (url) {
+          E.deco[k] = E.deco[k] || {}; E.deco[k].url = url;
+          item.querySelector(".deco-mini").style.backgroundImage = 'url("' + url + '")';
+          marcarCambio();
+          irA(k === "esquinaInf" ? "cierre" : k === "monograma" ? "portada" : "hero");
+        }).catch(function (e) { alert("No se pudo subir la imagen: " + e.message); })
+          .finally(function () { boton.classList.remove("ocupado"); boton.firstChild.textContent = "Subir imagen"; inp.value = ""; });
+      });
+    });
+    $$("[data-quitar-deco]", cuerpo).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var k = b.dataset.quitarDeco;
+        if (E.deco[k]) delete E.deco[k].url;
+        b.closest(".deco-item").querySelector(".deco-mini").style.backgroundImage = "";
+        marcarCambio();
+      });
+    });
+
+    // Secciones extra
+    $$("[data-nueva]", cuerpo).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var t = b.dataset.nueva;
+        E.secciones.push({ tipo: t, titulo: t === "lista" ? "Padrinos" : t === "galeria" ? "Nuestra historia" : "Hospedaje",
+          texto: "", items: t === "lista" ? [{ nombre: "", rol: "" }] : [], imagenes: [], posicion: "antes-confirmacion", fondoAlterno: false });
+        pintarSecciones(); marcarCambio();
+      });
+    });
+    pintarSecciones();
+  }
+
+  function pintarSecciones() {
+    var E = Z.especial, cont = $("listaSecciones");
+    var posiciones = { "despues-foto1": "Después de la foto 1", "despues-itinerario": "Después del itinerario", "antes-confirmacion": "Antes de confirmar" };
+    var nombresTipo = { texto: "📝 Texto", lista: "👥 Lista", galeria: "🖼 Galería" };
+    cont.innerHTML = E.secciones.map(function (s, i) {
+      var extra = "";
+      if (s.tipo === "lista") {
+        extra = '<div class="items-lista">' + (s.items || []).map(function (it, j) {
+          return '<div class="item-lista"><input type="text" data-item="' + j + '" data-k="nombre" value="' + esc(it.nombre) + '" placeholder="Nombre(s)" />' +
+            '<input type="text" data-item="' + j + '" data-k="rol" value="' + esc(it.rol) + '" placeholder="Ej. Padrinos de anillos" />' +
+            '<button type="button" class="borrar" data-quitar-item="' + j + '" aria-label="Quitar">✕</button></div>';
+        }).join("") + '</div><button type="button" class="btn-texto" data-add-item>+ Agregar renglón</button>';
+      }
+      if (s.tipo === "galeria") {
+        extra = '<div class="ref-imagenes">' + (s.imagenes || []).map(function (u, j) {
+          return '<div class="ref-img" style="background-image:url(\'' + esc(u) + '\')"><button type="button" data-quitar-img="' + j + '" aria-label="Quitar">✕</button></div>';
+        }).join("") + '</div><label class="btn-subir chico">Subir fotos<input type="file" accept="image/*" multiple hidden data-galeria /></label>';
+      }
+      return '<div class="seccion-extra" data-i="' + i + '"><div class="se-top"><strong>' + nombresTipo[s.tipo] + '</strong>' +
+        '<button type="button" class="btn-quitar" data-subir-sec="-1">↑</button><button type="button" class="btn-quitar" data-subir-sec="1">↓</button>' +
+        '<button type="button" class="borrar" data-borrar-sec aria-label="Eliminar sección">✕</button></div>' +
+        '<label>Título<input type="text" data-sk="titulo" value="' + esc(s.titulo) + '" /></label>' +
+        '<label>Texto <span class="opc">(opcional)</span><textarea rows="2" data-sk="texto">' + esc(s.texto) + "</textarea></label>" + extra +
+        '<div class="fila2"><label>Dónde aparece<select data-sk="posicion">' + Object.keys(posiciones).map(function (k) {
+          return '<option value="' + k + '"' + (s.posicion === k ? " selected" : "") + ">" + posiciones[k] + "</option>";
+        }).join("") + '</select></label><label class="check"><input type="checkbox" data-sk="fondoAlterno"' + (s.fondoAlterno ? " checked" : "") + " /> Con fondo de color</label></div></div>";
+    }).join("");
+
+    $$(".seccion-extra", cont).forEach(function (el) {
+      var i = +el.dataset.i, s = E.secciones[i];
+      $$("[data-sk]", el).forEach(function (inp) {
+        inp.addEventListener(inp.tagName === "SELECT" || inp.type === "checkbox" ? "change" : "input", function () {
+          s[inp.dataset.sk] = inp.type === "checkbox" ? inp.checked : inp.value; marcarCambio();
+          if (inp.dataset.sk === "posicion") irA("extra" + i);
+        });
+      });
+      $$("[data-item]", el).forEach(function (inp) {
+        inp.addEventListener("input", function () { s.items[+inp.dataset.item][inp.dataset.k] = inp.value; marcarCambio(); });
+      });
+      $$("[data-quitar-item]", el).forEach(function (b) {
+        b.addEventListener("click", function () { s.items.splice(+b.dataset.quitarItem, 1); pintarSecciones(); marcarCambio(); });
+      });
+      var add = el.querySelector("[data-add-item]");
+      if (add) add.addEventListener("click", function () { s.items.push({ nombre: "", rol: "" }); pintarSecciones(); });
+      $$("[data-quitar-img]", el).forEach(function (b) {
+        b.addEventListener("click", function () { s.imagenes.splice(+b.dataset.quitarImg, 1); pintarSecciones(); marcarCambio(); });
+      });
+      var gal = el.querySelector("[data-galeria]");
+      if (gal) gal.addEventListener("change", function () {
+        var archivos = Array.prototype.slice.call(gal.files || []), boton = gal.parentNode;
+        boton.classList.add("ocupado"); boton.firstChild.textContent = "Subiendo…";
+        Promise.all(archivos.map(function (f) {
+          return subir(f, "galeria", s.titulo || "Galería", 1600).then(function (url) { s.imagenes.push(url); }).catch(function () {});
+        })).then(function () { pintarSecciones(); marcarCambio(); irA("extra" + i); });
+      });
+      el.querySelector("[data-borrar-sec]").addEventListener("click", function () {
+        if (!confirm("¿Eliminar esta sección?")) return;
+        E.secciones.splice(i, 1); pintarSecciones(); marcarCambio();
+      });
+      $$("[data-subir-sec]", el).forEach(function (b) {
+        b.addEventListener("click", function () {
+          var j = i + Number(b.dataset.subirSec); if (j < 0 || j >= E.secciones.length) return;
+          var t = E.secciones[i]; E.secciones[i] = E.secciones[j]; E.secciones[j] = t; pintarSecciones(); marcarCambio();
+        });
+      });
+    });
+  }
+
+
   /* ---------- Interfaz ---------- */
   function enlazarInterfaz() {
     $$(".paso").forEach(function (p) {
@@ -364,6 +606,7 @@
       D.regalos = D.regalos || []; D.regalos.push({ titulo: "", detalle: "", enlace: "" }); pintarRegalos();
     });
     $("btnEnviarDiseno").addEventListener("click", function () {
+      if (esAdmin) { guardar(false).catch(function () {}); return; }
       if (!D.novia || !D.novio || !D.fecha) {
         alert("Antes de enviar, completa los nombres y la fecha de la boda (paso 1).");
         var p1 = document.querySelector('[data-paso="datos"]'); p1.open = true; p1.scrollIntoView({ behavior: "smooth" });
@@ -389,8 +632,10 @@
     if (datos && datos.regalos) D.regalos = datos.regalos;
     Z = mezclar(C.diseno, diseno || {});
     Z.referencias = (diseno && diseno.referencias) || {};
+    if (esAdmin) { document.body.classList.add("modo-admin"); Z.especial = (diseno && diseno.especial) || {}; }
     tituloPareja();
     enlazarCampos(); pintarOpciones(); pintarColoresPropios(); pintarItinerario(); pintarRegalos();
+    if (esAdmin) construirAdmin();
     pintarMiniFotos(); enlazarFotos(); agregarReferencias(); enlazarInterfaz();
     ponerEstado(est);
     document.body.classList.remove("cargando");
@@ -402,12 +647,15 @@
     if (demo) {
       var g = null;
       try { g = JSON.parse(leerLS("boda_demo_" + cliente) || "null"); } catch (e) {}
+      esAdmin = !!claveAdmin; // en demostración cualquier clave abre el modo admin
       arrancar(g && g.datos, g && g.diseno, g && g.estado);
       estadoGuardado("Modo demostración · se guarda en este navegador");
       return;
     }
-    llamar({ accion: "cliente", cl: cliente, editar: 1 }).then(function (r) {
+    llamar({ accion: "cliente", cl: cliente, editar: 1, admin: claveAdmin }).then(function (r) {
       if (!r || !r.ok) throw new Error("no encontrado");
+      esAdmin = !!r.admin;
+      if (claveAdmin && !esAdmin) alert("La clave de administrador no es correcta. Se abrirá como cliente.");
       var borrador = null;
       try { borrador = JSON.parse(leerLS("boda_borrador_" + cliente) || "null"); } catch (e) {}
       // Si hay cambios locales que no alcanzaron a guardarse, se usan esos
