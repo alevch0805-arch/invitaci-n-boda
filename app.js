@@ -369,10 +369,12 @@
     peticion.then(function (r) {
       if (r && r.ok) {
         if (r.nombre) invitado = { nombre: r.nombre, pases: Number(r.pases) || 0 };
-        if (r.cliente) {
-          codigoCliente = r.cliente.codigo || codigoCliente;
-          D = mezclar(C.datos, r.cliente.datos || {}); Z = mezclar(C.diseno, r.cliente.diseno || {});
-          if (r.cliente.datos) { D.itinerario = r.cliente.datos.itinerario || D.itinerario; D.regalos = r.cliente.datos.regalos || D.regalos; }
+        // "abrir" (invitado) trae el cliente dentro de r.cliente; "cliente" (vista ?c=) lo trae directo
+        var cl = r.cliente || (codigo ? null : r);
+        if (cl) {
+          codigoCliente = cl.codigo || codigoCliente;
+          D = mezclar(C.datos, cl.datos || {}); Z = mezclar(C.diseno, cl.diseno || {});
+          if (cl.datos) { D.itinerario = cl.datos.itinerario || D.itinerario; D.regalos = cl.datos.regalos || D.regalos; }
         }
       }
     }).catch(function () {}).finally(mostrar);
