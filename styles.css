@@ -393,3 +393,10 @@ body.con-mono #selloIniciales, body.con-mono .cortina-iniciales, body.con-mono .
 .extra.canva:not(.sin-margen) .canva-imgs img + img { margin-top: 12px; }
 .canva-marco { position: relative; width: 100%; height: 0; overflow: hidden; }
 .canva-marco iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* ===== Estado de la solicitud de lugares extra ===== */
+.estado-solicitud { max-width: 380px; margin: 0 auto 1.4rem; padding: .7rem 1rem; border-radius: 12px; font-size: .88rem;
+  background: #FCEFC7; color: var(--moca-oscuro); border: 1px solid #EBCB8B; }
+.estado-solicitud[hidden] { display: none; }
+.estado-solicitud.aprobada { background: #E3EBDA; border-color: #B8CBA5; }
+.estado-solicitud.rechazada { background: var(--blanco); border-color: var(--beige); }

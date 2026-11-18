@@ -226,7 +226,7 @@
     if (invitado.pases && cantidad > invitado.pases) {
       aviso.hidden = false;
       aviso.textContent = "Tu invitación incluye " + invitado.pases + (invitado.pases === 1 ? " lugar" : " lugares") +
-        ". Enviaremos tu solicitud a los novios para que la revisen.";
+        ". Los " + (cantidad - invitado.pases) + " lugar(es) extra se enviarán como solicitud a los novios, y ellos te responderán.";
     } else aviso.hidden = true;
     var cont = $("acompanantes");
     var valores = Array.prototype.map.call(cont.querySelectorAll("input"), function (i) { return i.value; });
@@ -267,7 +267,11 @@
     $("formRsvp").hidden = true; $("gracias").hidden = false;
     if (d.asiste === "si") {
       texto("graciasTitulo", "¡Gracias!");
-      texto("graciasTexto", "Confirmaste " + d.cantidad + (d.cantidad == 1 ? " lugar" : " lugares") + ". ¡Nos vemos en la boda!");
+      var extra = invitado.pases ? Math.max(0, d.cantidad - invitado.pases) : 0;
+      texto("graciasTexto", extra
+        ? "Confirmaste " + invitado.pases + (invitado.pases == 1 ? " lugar" : " lugares") + ". Tu solicitud de " + extra +
+          " lugar(es) extra fue enviada a los novios; te avisarán su respuesta."
+        : "Confirmaste " + d.cantidad + (d.cantidad == 1 ? " lugar" : " lugares") + ". ¡Nos vemos en la boda!");
     } else {
       texto("graciasTitulo", "Te extrañaremos");
       texto("graciasTexto", "Gracias por avisarnos. Te llevaremos en el corazón ese día.");
@@ -483,6 +487,13 @@
     peticion.then(function (r) {
       if (r && r.ok) {
         if (r.nombre) invitado = { nombre: r.nombre, pases: Number(r.pases) || 0 };
+        if (r.extra && r.solicitud) {
+          var es = $("estadoSolicitud"), n = r.extra + (r.extra == 1 ? " lugar extra" : " lugares extra");
+          es.hidden = false;
+          if (r.solicitud.indexOf("Aprobada") !== -1) { es.textContent = "🎉 ¡Los novios aprobaron tus " + n + "! Tu invitación ahora es para " + r.pases + "."; es.className = "estado-solicitud aprobada"; }
+          else if (r.solicitud.indexOf("Rechazada") !== -1) { es.textContent = "Los novios no pudieron aprobar " + n + ". Tu invitación es para " + r.pases + (r.pases == 1 ? " persona." : " personas."); es.className = "estado-solicitud rechazada"; }
+          else { es.textContent = "⏳ Tu solicitud de " + n + " está esperando la respuesta de los novios."; es.className = "estado-solicitud"; }
+        }
         // "abrir" (invitado) trae el cliente dentro de r.cliente; "cliente" (vista ?c=) lo trae directo
         var cl = r.cliente || (codigo ? null : r);
         if (cl) {

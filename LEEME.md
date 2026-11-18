@@ -139,3 +139,27 @@ Cómo funciona:
 - **Enlace vivo:** en Canva ve a **Compartir → Insertar** (o "Más → Insertar"), copia el código y pégalo. La proporción se detecta sola. Cada vez que edites en Canva, la invitación se actualiza.
 - Puedes elegir dónde aparece (al inicio, después de la foto 1, después del itinerario, antes de confirmar o al final) y si va de orilla a orilla.
 - Con el enlace vivo, Canva puede mostrar su pequeña barra al pie del diseño. Si prefieres que no aparezca, usa la opción de imagen.
+
+---
+
+## 📱 Panel de la pareja
+
+Cada pareja tiene un **panel privado** (columna **"📱 Panel de la pareja"** en Clientes). Para mandárselo, usa el botón **"📲 Enviar panel"**. Desde el panel, la pareja:
+
+- **Agrega a sus invitados** (nombre, lugares y WhatsApp). Tú también puedes seguir agregándolos en la hoja; se ven en los dos lados.
+- **Envía las invitaciones desde su propio celular**: el botón 📲 abre WhatsApp con el mensaje listo. Con **"Enviar a los que faltan"** van uno por uno.
+- **Ve las confirmaciones en vivo**, con totales y las mismas alertas que tú.
+- **Aprueba o rechaza las solicitudes de lugares extra** y le avisa al invitado por WhatsApp con un toque.
+- **Personaliza su mensaje de WhatsApp** y escribe **su correo para recibir avisos**.
+
+### Lugares extra
+Si un invitado con 2 lugares confirma 4, se registran sus **2 lugares** y los otros **2 quedan como solicitud ⏳ Pendiente** (columnas "Lugares extra pedidos" y "Solicitud de pases"). Si la pareja la aprueba, sus pases suben a 4. Cuando el invitado vuelve a abrir su invitación, ve la respuesta.
+
+### Avisos por correo a la pareja
+- **Al instante**, cuando alguien pide lugares extra.
+- **Cada noche (8 pm)**, un resumen con las confirmaciones del día.
+- Se envían al **"Correo de la pareja"** (columna en Clientes, o lo escriben ellos en su panel). Tú no recibes copia.
+- Gmail permite unos **100 correos al día** sumando a todos tus clientes.
+- **Para probar:** usa el menú **💍 Invitaciones → Enviar resumen diario ahora (prueba)**.
+
+**Importante:** la "Clave del panel" de cada pareja es privada. Si la pareja comparte su panel con alguien que no debe, borra esa clave y usa **Generar códigos y enlaces**: se crea una nueva y el enlace anterior deja de funcionar.

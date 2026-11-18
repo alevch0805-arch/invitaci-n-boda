@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel de la boda</title>
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#F5F1EA" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Great+Vibes&family=Montserrat:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="panel.css" />
+</head>
+<body class="cargando">
+  <div class="cargador"><span></span><span></span><span></span></div>
+
+  <div class="pantalla-error" id="pantallaError" hidden>
+    <h1>Enlace no válido</h1>
+    <p>Revisa que sea el enlace de tu panel que te enviamos.</p>
+  </div>
+
+  <header class="top">
+    <div>
+      <p class="top-mini">Panel de la boda</p>
+      <h1 id="titulo">Laura &amp; Carlos</h1>
+      <p class="top-fecha" id="fechaBoda"></p>
+    </div>
+    <button type="button" class="btn-icono" id="btnRecargar" aria-label="Actualizar">↻</button>
+  </header>
+
+  <main class="contenido">
+    <p class="demo-aviso" id="demoAviso" hidden>Modo demostración: los cambios no se guardan.</p>
+
+    <!-- Resumen -->
+    <section class="tarjetas-resumen" id="resumen"></section>
+
+    <!-- Solicitudes de lugares extra -->
+    <section class="bloque solicitudes" id="bloqueSolicitudes" hidden>
+      <h2>🙋 Solicitudes de lugares extra</h2>
+      <div id="listaSolicitudes"></div>
+    </section>
+
+    <!-- Invitados -->
+    <section class="bloque">
+      <div class="bloque-top">
+        <h2>Invitados</h2>
+        <button type="button" class="btn-principal chico" id="btnAgregar">+ Agregar</button>
+      </div>
+      <button type="button" class="btn-whatsapp" id="btnEnviarPendientes">📲 Enviar a los que faltan <span id="numFaltan"></span></button>
+      <input type="search" id="buscar" placeholder="Buscar invitado…" aria-label="Buscar invitado" />
+      <div class="filtros" id="filtros">
+        <button type="button" class="filtro activo" data-filtro="todos">Todos</button>
+        <button type="button" class="filtro" data-filtro="sinEnviar">Sin enviar</button>
+        <button type="button" class="filtro" data-filtro="pendientes">Sin responder</button>
+        <button type="button" class="filtro" data-filtro="si">Asistirán</button>
+        <button type="button" class="filtro" data-filtro="no">No asistirán</button>
+        <button type="button" class="filtro" data-filtro="alertas">⚠️ Alertas</button>
+      </div>
+      <div id="lista" class="lista"></div>
+      <p class="vacio" id="vacio" hidden>Todavía no hay invitados. Toca <strong>+ Agregar</strong> para empezar.</p>
+    </section>
+
+    <!-- Ajustes -->
+    <details class="bloque ajustes">
+      <summary>⚙️ Mensaje de WhatsApp y avisos</summary>
+      <label>Mensaje que se envía con cada invitación
+        <textarea id="mensaje" rows="4"></textarea>
+      </label>
+      <p class="nota">Puedes usar: <code>{nombre}</code> nombre del invitado · <code>{pases}</code> lugares · <code>{enlace}</code> su invitación · <code>{pareja}</code> sus nombres</p>
+      <button type="button" class="btn-linea" id="guardarMensaje">Guardar mensaje</button>
+      <label>Correo para recibir avisos
+        <input type="email" id="correo" placeholder="tucorreo@gmail.com" />
+      </label>
+      <p class="nota">Les llega un correo al instante cuando alguien pide lugares extra, y un resumen cada noche con las confirmaciones del día.</p>
+      <button type="button" class="btn-linea" id="guardarCorreo">Guardar correo</button>
+      <p class="nota" id="ajustesEstado"></p>
+      <p class="nota"><a id="enlaceDisenar" href="#">✏️ Ver o editar el diseño de mi invitación</a></p>
+    </details>
+  </main>
+
+  <!-- Agregar / editar invitado -->
+  <div class="modal" id="modalInvitado" hidden>
+    <form class="modal-caja" id="formInvitado">
+      <h3 id="tituloModal">Agregar invitado</h3>
+      <label>Nombre (como aparecerá en su invitación)
+        <input type="text" id="fNombre" required placeholder="Ej. Familia Pérez" autocomplete="off" />
+      </label>
+      <label>Lugares (pases)
+        <div class="contador">
+          <button type="button" id="fMenos" aria-label="Menos">−</button>
+          <output id="fPases">1</output>
+          <button type="button" id="fMas" aria-label="Más">+</button>
+        </div>
+      </label>
+      <label>WhatsApp <span class="opc">(10 dígitos, o con lada de país)</span>
+        <input type="tel" id="fTelefono" placeholder="55 1234 5678" inputmode="tel" autocomplete="off" />
+      </label>
+      <p class="error" id="fError" hidden></p>
+      <div class="modal-botones">
+        <button type="button" class="btn-linea" id="fCancelar">Cancelar</button>
+        <button type="submit" class="btn-principal" id="fGuardar">Guardar</button>
+      </div>
+      <button type="button" class="btn-borrar" id="fBorrar" hidden>Eliminar invitado</button>
+    </form>
+  </div>
+
+  <!-- Envío uno por uno -->
+  <div class="modal" id="modalEnvio" hidden>
+    <div class="modal-caja">
+      <p class="top-mini" id="envioProgreso">1 de 10</p>
+      <h3 id="envioNombre"></h3>
+      <p class="nota" id="envioDetalle"></p>
+      <div class="vista-mensaje" id="envioMensaje"></div>
+      <a class="btn-whatsapp grande" id="envioAbrir" target="_blank" rel="noopener">📲 Abrir WhatsApp</a>
+      <div class="modal-botones">
+        <button type="button" class="btn-linea" id="envioSaltar">Saltar</button>
+        <button type="button" class="btn-principal" id="envioSiguiente">Siguiente →</button>
+      </div>
+      <button type="button" class="btn-texto" id="envioCerrar">Terminar</button>
+    </div>
+  </div>
+
+  <div class="aviso-flotante" id="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

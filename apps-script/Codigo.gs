@@ -14,20 +14,22 @@ var HOJA_RESUMEN = "Resumen";
 var CARPETA_RAIZ = "Invitaciones de boda";
 
 // Columnas de "Clientes"
-var CC = { codigo: 1, pareja: 2, contacto: 3, estado: 4, disenar: 5, enviar: 6, ver: 7, carpeta: 8, actualizado: 9, notas: 10, diseno: 11, datos: 12, admin: 13 };
+var CC = { codigo: 1, pareja: 2, contacto: 3, estado: 4, disenar: 5, enviar: 6, ver: 7, carpeta: 8, actualizado: 9, notas: 10, diseno: 11, datos: 12, admin: 13,
+  correo: 14, clavePanel: 15, panel: 16, enviarPanel: 17 };
 var ENC_CLI = ["Código", "Pareja", "WhatsApp del cliente", "Estado del diseño", "Enlace para diseñar", "Enviar al cliente",
-  "Ver invitación", "Carpeta (fotos y referencias)", "Última actualización", "Notas", "Diseño (no editar)", "Datos (no editar)", "⭐ Editar como admin"];
+  "Ver invitación", "Carpeta (fotos y referencias)", "Última actualización", "Notas", "Diseño (no editar)", "Datos (no editar)", "⭐ Editar como admin",
+  "Correo de la pareja", "Clave del panel (no compartir)", "📱 Panel de la pareja", "Enviar panel"];
 var ESTADOS = ["✏️ Diseñando", "📩 Enviado", "✅ Aprobado"];
 
 // Columnas de "Invitados"
 var COL = {
   cliente: 1, codigo: 2, nombre: 3, pases: 4, telefono: 5, enlace: 6, whatsapp: 7,
   estado: 8, asistiran: 9, quien: 10, acompanantes: 11, mensaje: 12,
-  dispositivos: 13, aperturas: 14, alertas: 15, ultima: 16
+  dispositivos: 13, aperturas: 14, alertas: 15, ultima: 16, extra: 17, solicitud: 18, enviada: 19
 };
 var ENC_INV = ["Cliente", "Código", "Nombre del invitado", "Pases", "Teléfono (con lada país)", "Enlace personal",
   "Enviar", "Estado", "Asistirán", "Quién confirmó", "Acompañantes", "Mensaje", "Dispositivos",
-  "Veces abierta", "⚠️ Alertas", "Última actividad"];
+  "Veces abierta", "⚠️ Alertas", "Última actividad", "Lugares extra pedidos", "Solicitud de pases", "Enviada"];
 
 // Aperturas: Fecha | Cliente | Código | Invitación de | Dispositivo | Equipo | ¿Nuevo?
 // Respuestas: Fecha | Cliente | Código | Invitación de | Pases | Quién | Asiste | Cantidad | Acompañantes | Mensaje | Dispositivo | Equipo | Alertas
@@ -40,6 +42,8 @@ function onOpen() {
     .addItem("1. Preparar hojas (solo la primera vez)", "prepararHojas")
     .addItem("Generar códigos y enlaces", "generarTodo")
     .addItem("Recalcular alertas", "recalcularTodo")
+    .addItem("Activar resumen diario por correo", "activarResumenDiario")
+    .addItem("Enviar resumen diario ahora (prueba)", "resumenDiario")
     .addToUi();
 }
 
@@ -146,7 +150,7 @@ function prepararHojas() {
 }
 
 /* ================= CÓDIGOS Y ENLACES ================= */
-function generarTodo(silencioso) { asegurarClave(); generarClientes(true); generarEnlaces(true); if (silencioso !== true) SpreadsheetApp.getActive().toast("Códigos y enlaces generados.", "💍", 4); }
+function generarTodo(silencioso) { asegurarClave(); asegurarEncabezados(); activarResumenDiario(true); generarClientes(true); generarEnlaces(true); if (silencioso !== true) SpreadsheetApp.getActive().toast("Códigos y enlaces generados.", "💍", 4); }
 
 function generarClientes(silencioso) {
   var cli = SpreadsheetApp.getActive().getSheetByName(HOJA_CLI);
@@ -168,11 +172,39 @@ function generarClientes(silencioso) {
     cli.getRange(fila, CC.ver).setFormula('=IF(A' + fila + '="","",HYPERLINK(' + cfg + '$B$1&"?c="&A' + fila + ',"👁 Ver"))');
     cli.getRange(fila, CC.admin).setFormula('=IF(OR(A' + fila + '="",' + cfg + '$B$6=""),"",HYPERLINK(' + cfg + '$B$1&"disenar.html?c="&A' + fila +
       '&"&admin="&' + cfg + '$B$6,"⭐ Editar"))');
+    if (!String(cli.getRange(fila, CC.clavePanel).getValue()).trim()) cli.getRange(fila, CC.clavePanel).setValue(claveAleatoria(12));
+    var urlPanel = cfg + '$B$1&"panel.html?c="&A' + fila + '&"&k="&O' + fila;
+    cli.getRange(fila, CC.panel).setFormula('=IF(OR(A' + fila + '="",O' + fila + '=""),"",HYPERLINK(' + urlPanel + ',"📱 Abrir panel"))');
+    cli.getRange(fila, CC.enviarPanel).setFormula('=IF(OR(A' + fila + '="",O' + fila + '=""),"",HYPERLINK("https://wa.me/"&REGEXREPLACE(TO_TEXT(C' + fila +
+      '),"\\D","")&"?text="&ENCODEURL(SUBSTITUTE(SUBSTITUTE(' + cfg + '$B$7,"{pareja}",B' + fila + '),"{enlace}",' + urlPanel + ')),"📲 Enviar panel"))');
   }
-  if (!cli.getRange(1, CC.admin).getValue()) {
-    cli.getRange(1, CC.admin).setValue(ENC_CLI[CC.admin - 1]);
-    estiloEncabezado(cli, ENC_CLI.length);
-    cli.setColumnWidth(CC.admin, 140);
+}
+
+function claveAleatoria(n) {
+  var letras = "abcdefghijkmnpqrstuvwxyz23456789", k = "";
+  for (var i = 0; i < n; i++) k += letras.charAt(Math.floor(Math.random() * letras.length));
+  return k;
+}
+
+/* Pone los encabezados nuevos en hojas que ya existían (se puede correr muchas veces) */
+function asegurarEncabezados() {
+  var ss = SpreadsheetApp.getActive();
+  var cli = ss.getSheetByName(HOJA_CLI), inv = ss.getSheetByName(HOJA_INV), cfg = ss.getSheetByName(HOJA_CFG);
+  cli.getRange(1, 1, 1, ENC_CLI.length).setValues([ENC_CLI]); estiloEncabezado(cli, ENC_CLI.length);
+  [[CC.admin, 120], [CC.correo, 200], [CC.clavePanel, 110], [CC.panel, 130], [CC.enviarPanel, 120]].forEach(function (w) { cli.setColumnWidth(w[0], w[1]); });
+  cli.getRange(2, CC.clavePanel, cli.getMaxRows() - 1, 1).setFontColor("#B0A49C");
+  inv.getRange(1, 1, 1, ENC_INV.length).setValues([ENC_INV]); estiloEncabezado(inv, ENC_INV.length);
+  [[COL.extra, 110], [COL.solicitud, 140], [COL.enviada, 140]].forEach(function (w) { inv.setColumnWidth(w[0], w[1]); });
+  inv.setConditionalFormatRules([
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$O2<>""').setBackground("#FBE3DC").setRanges([inv.getRange("A2:S")]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextContains("Asistirá").setBackground(COLORES.salvia).setRanges([inv.getRange("H2:H")]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextContains("No asistirá").setBackground("#E9E2DD").setRanges([inv.getRange("H2:H")]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenTextContains("Pendiente").setBackground("#FCEFC7").setRanges([inv.getRange("R2:R")]).build()
+  ]);
+  if (!cfg.getRange("A7").getValue()) {
+    cfg.getRange("A7:B7").setValues([["Mensaje de WhatsApp para el panel",
+      "¡Hola {pareja}! 📱 Este es su panel para enviar sus invitaciones desde su celular, ver quién confirma y aprobar lugares extra. Guárdenlo, es privado: {enlace}"]]);
+    cfg.getRange("A7").setFontWeight("bold").setFontColor(COLORES.moca); cfg.getRange("B7").setWrap(true);
   }
 }
 
@@ -206,13 +238,18 @@ function generarEnlaces(silencioso) {
       inv.getRange(fila, COL.codigo).setValue(c);
     }
     if (!datos[i][3]) inv.getRange(fila, COL.pases).setValue(1);
-    inv.getRange(fila, COL.enlace).setFormula('=IF(B' + fila + '="","",' + cfg + '$B$1&"?i="&B' + fila + ')');
-    inv.getRange(fila, COL.whatsapp).setFormula(
-      '=IF(B' + fila + '="","",HYPERLINK("https://wa.me/"&REGEXREPLACE(TO_TEXT(E' + fila + '),"\\D","")&"?text="&ENCODEURL(' +
-      'SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(' + cfg + '$B$2,"{nombre}",C' + fila + '),"{pases}",D' + fila + '),"{enlace}",F' + fila +
-      '),"{pareja}",IFERROR(VLOOKUP(A' + fila + ',Clientes!A:B,2,FALSE),""))),"📲 Enviar"))');
+    formulasInvitado(inv, fila);
     if (!inv.getRange(fila, COL.estado).getValue()) inv.getRange(fila, COL.estado).setValue("⏳ Sin abrir");
   }
+}
+
+function formulasInvitado(inv, fila) {
+  var cfg = "'" + HOJA_CFG + "'!";
+  inv.getRange(fila, COL.enlace).setFormula('=IF(B' + fila + '="","",' + cfg + '$B$1&"?i="&B' + fila + ')');
+  inv.getRange(fila, COL.whatsapp).setFormula(
+    '=IF(B' + fila + '="","",HYPERLINK("https://wa.me/"&REGEXREPLACE(TO_TEXT(E' + fila + '),"\\D","")&"?text="&ENCODEURL(' +
+    'SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(' + cfg + '$B$2,"{nombre}",C' + fila + '),"{pases}",D' + fila + '),"{enlace}",F' + fila +
+    '),"{pareja}",IFERROR(VLOOKUP(A' + fila + ',Clientes!A:B,2,FALSE),""))),"📲 Enviar"))');
 }
 
 function nuevoCodigo(usados, largo) {
@@ -230,6 +267,7 @@ function doGet(e) {
     if (p.accion === "confirmar") return registrarRespuesta(p);
     if (p.accion === "cliente") return leerCliente(p.cl || p.c, p.admin); // "c" está reservado por Google
     if (p.accion === "fuente") return servirFuente(p.id);
+    if (p.accion === "panel") return leerPanel(p);
     return { ok: true, mensaje: "La hoja de invitaciones está conectada correctamente 💍" };
   });
   var json = JSON.stringify(r);
@@ -245,6 +283,7 @@ function doPost(e) {
     var p = JSON.parse(e.postData.contents);
     if (p.accion === "subir") r = subirImagen(p); // sin bloqueo: puede tardar
     else if (p.accion === "guardar") r = conBloqueo(function () { return guardarDiseno(p); });
+    else if (/^panel/.test(p.accion)) r = conBloqueo(function () { return accionPanel(p); });
     else r = { ok: false, error: "Acción desconocida" };
   } catch (err) { r = { ok: false, error: String(err) }; }
   return ContentService.createTextOutput(JSON.stringify(r)).setMimeType(ContentService.MimeType.JSON);
@@ -264,13 +303,14 @@ function buscarCliente(codigo) {
   var cli = SpreadsheetApp.getActive().getSheetByName(HOJA_CLI);
   var n = cli.getLastRow() - 1;
   if (n < 1) return null;
-  var filas = cli.getRange(2, 1, n, CC.datos).getValues();
+  var filas = cli.getRange(2, 1, n, CC.enviarPanel).getValues();
   for (var i = 0; i < n; i++) {
     if (String(filas[i][0]).trim().toUpperCase() === codigo) {
       var f = filas[i];
       return {
         fila: i + 2, codigo: codigo, pareja: String(f[CC.pareja - 1]), estado: String(f[CC.estado - 1] || ESTADOS[0]),
-        carpeta: String(f[CC.carpeta - 1] || ""), diseno: parsear(f[CC.diseno - 1]), datos: parsear(f[CC.datos - 1])
+        carpeta: String(f[CC.carpeta - 1] || ""), diseno: parsear(f[CC.diseno - 1]), datos: parsear(f[CC.datos - 1]),
+        contacto: String(f[CC.contacto - 1] || ""), correo: String(f[CC.correo - 1] || "").trim(), clavePanel: String(f[CC.clavePanel - 1] || "").trim()
       };
     }
   }
@@ -399,10 +439,12 @@ function buscarInvitado(codigo) {
   var inv = SpreadsheetApp.getActive().getSheetByName(HOJA_INV);
   var n = inv.getLastRow() - 1;
   if (n < 1) return null;
-  var filas = inv.getRange(2, 1, n, 4).getValues();
+  var filas = inv.getRange(2, 1, n, COL.enviada).getValues();
   for (var i = 0; i < n; i++) {
-    if (String(filas[i][1]).trim().toUpperCase() === codigo)
-      return { fila: i + 2, cliente: String(filas[i][0]).toUpperCase(), codigo: codigo, nombre: String(filas[i][2]), pases: Number(filas[i][3]) || 1 };
+    var f = filas[i];
+    if (String(f[1]).trim().toUpperCase() === codigo)
+      return { fila: i + 2, cliente: String(f[0]).toUpperCase(), codigo: codigo, nombre: String(f[2]), pases: Number(f[3]) || 1,
+        extra: Number(f[COL.extra - 1]) || 0, solicitud: String(f[COL.solicitud - 1] || "") };
   }
   return null;
 }
@@ -418,7 +460,8 @@ function registrarApertura(p) {
   if (!g) return { ok: true, nombre: "", pases: 0 };
   actualizarInvitado(g);
   var c = buscarCliente(g.cliente);
-  return { ok: true, nombre: g.nombre, pases: g.pases, cliente: c ? { codigo: c.codigo, diseno: c.diseno, datos: c.datos } : null };
+  return { ok: true, nombre: g.nombre, pases: g.pases, extra: g.extra, solicitud: g.solicitud,
+    cliente: c ? { codigo: c.codigo, diseno: c.diseno, datos: c.datos } : null };
 }
 
 function registrarRespuesta(p) {
@@ -429,15 +472,26 @@ function registrarRespuesta(p) {
   if (!g) alertas.push("🔴 Confirmó sin una invitación válida" + (p.codigo ? " (código " + p.codigo + ")" : " (enlace sin código)"));
   else {
     if (!coincideNombre(g.nombre, p.quien)) alertas.push("🔴 Confirmó otra persona: \"" + p.quien + "\" usó la invitación de " + g.nombre);
-    if (cantidad > g.pases) alertas.push("🔴 Pidió " + cantidad + " lugares (tenía " + g.pases + ")");
+    if (cantidad > g.pases) alertas.push("🟡 Pidió " + cantidad + " lugares (tenía " + g.pases + "): solicitud enviada a la pareja");
     var disp = dispositivosDe(g.codigo);
     if (disp.length && disp[0] !== p.dispositivo) alertas.push("🟠 Confirmado desde un dispositivo distinto al primero que abrió la invitación");
   }
   res.appendRow([new Date(), g ? g.cliente : String(p.cliente || ""), g ? g.codigo : (p.codigo || "(sin código)"), g ? g.nombre : "❓ No registrado",
     g ? g.pases : "", p.quien || "", p.asiste === "si" ? "Sí" : "No", cantidad, p.acompanantes || "", p.mensaje || "",
     p.dispositivo || "", p.equipo || "", alertas.join("\n")]);
-  if (g) actualizarInvitado(g);
-  return { ok: true };
+  var extra = 0;
+  if (g) {
+    var inv = SpreadsheetApp.getActive().getSheetByName(HOJA_INV);
+    extra = Math.max(0, cantidad - g.pases);
+    if (extra > 0) {
+      inv.getRange(g.fila, COL.extra, 1, 2).setValues([[extra, "⏳ Pendiente"]]);
+      avisarSolicitud(g, extra, p);
+    } else if (g.solicitud.indexOf("Pendiente") !== -1 || g.solicitud.indexOf("Rechazada") !== -1) {
+      inv.getRange(g.fila, COL.extra, 1, 2).setValues([["", ""]]); // ya no pide lugares extra
+    }
+    actualizarInvitado(g);
+  }
+  return { ok: true, extra: extra, pases: g ? g.pases : 0 };
 }
 
 /* ================= ESTADO Y ALERTAS ================= */
@@ -454,6 +508,9 @@ function dispositivosDe(codigo) {
 function actualizarInvitado(g) {
   var ss = SpreadsheetApp.getActive();
   var inv = ss.getSheetByName(HOJA_INV), ape = ss.getSheetByName(HOJA_APE), res = ss.getSheetByName(HOJA_RES);
+  var filaAct = inv.getRange(g.fila, 1, 1, COL.enviada).getValues()[0];
+  var pasesAct = Number(filaAct[COL.pases - 1]) || g.pases || 1;
+  var extraAct = Number(filaAct[COL.extra - 1]) || 0, solAct = String(filaAct[COL.solicitud - 1] || ""), enviada = filaAct[COL.enviada - 1];
 
   var dispositivos = [], equipos = {}, veces = 0, ultima = null;
   if (ape.getLastRow() > 1) ape.getRange(2, 1, ape.getLastRow() - 1, 6).getValues().forEach(function (f) {
@@ -481,14 +538,17 @@ function actualizarInvitado(g) {
   }
   if (ult) {
     if (!coincideNombre(g.nombre, ult[5])) alertas.push("🔴 Confirmó otra persona: \"" + ult[5] + "\"");
-    if (Number(ult[7]) > g.pases) alertas.push("🔴 Pidió " + ult[7] + " lugares (tenía " + g.pases + ")");
+    if (solAct.indexOf("Pendiente") !== -1) alertas.push("🟡 Pide " + extraAct + " lugar(es) extra: esperando respuesta de la pareja");
+    else if (solAct.indexOf("Rechazada") !== -1) alertas.push("⚪ La pareja rechazó " + extraAct + " lugar(es) extra");
+    else if (Number(ult[7]) > pasesAct) alertas.push("🔴 Pidió " + ult[7] + " lugares (tenía " + pasesAct + ")");
     if (dispositivos.length > 1 && dispositivos[0] !== ult[10]) alertas.push("🟠 La confirmación vino de otro dispositivo");
     if (!ultima || ult[0] > ultima) ultima = ult[0];
   }
 
-  var estado = ult ? (ult[6] === "Sí" ? "✅ Asistirá" : "❌ No asistirá") : (veces ? "👀 Abierta" : "⏳ Sin abrir");
+  var estado = ult ? (ult[6] === "Sí" ? "✅ Asistirá" : "❌ No asistirá") : (veces ? "👀 Abierta" : (enviada ? "📤 Enviada" : "⏳ Sin abrir"));
   inv.getRange(g.fila, COL.estado).setValue(estado);
-  inv.getRange(g.fila, COL.asistiran, 1, 4).setValues([[ult ? Number(ult[7]) : "", ult ? ult[5] : "", ult ? ult[8] : "", ult ? ult[9] : ""]]);
+  // Asisten solo los lugares que tiene; los extra cuentan hasta que la pareja los aprueba
+  inv.getRange(g.fila, COL.asistiran, 1, 4).setValues([[ult ? Math.min(Number(ult[7]), pasesAct) : "", ult ? ult[5] : "", ult ? ult[8] : "", ult ? ult[9] : ""]]);
   inv.getRange(g.fila, COL.dispositivos, 1, 4).setValues([[dispositivos.length, veces, alertas.join("\n"), ultima || ""]]);
 }
 
@@ -499,6 +559,151 @@ function recalcularTodo() {
     if (f[1]) actualizarInvitado({ fila: i + 2, cliente: String(f[0]).toUpperCase(), codigo: String(f[1]).toUpperCase(), nombre: String(f[2]), pases: Number(f[3]) || 1 });
   });
   SpreadsheetApp.getActive().toast("Alertas recalculadas.", "💍", 4);
+}
+
+/* ================= PANEL DE LA PAREJA ================= */
+function validarPanel(codigo, clave) {
+  var c = buscarCliente(codigo);
+  if (!c || !c.clavePanel || String(clave || "").trim() !== c.clavePanel) return null;
+  return c;
+}
+function baseInvitacion() { return String(SpreadsheetApp.getActive().getSheetByName(HOJA_CFG).getRange("B1").getValue() || ""); }
+function fechaISO(v) { return v instanceof Date ? v.toISOString() : (v || ""); }
+function objetoInvitado(f) {
+  return {
+    codigo: String(f[COL.codigo - 1]), nombre: String(f[COL.nombre - 1]), pases: Number(f[COL.pases - 1]) || 1,
+    telefono: String(f[COL.telefono - 1] || ""), enlace: baseInvitacion() + "?i=" + f[COL.codigo - 1],
+    estado: String(f[COL.estado - 1] || ""), asistiran: f[COL.asistiran - 1] === "" ? "" : Number(f[COL.asistiran - 1]),
+    quien: String(f[COL.quien - 1] || ""), acompanantes: String(f[COL.acompanantes - 1] || ""), mensaje: String(f[COL.mensaje - 1] || ""),
+    dispositivos: Number(f[COL.dispositivos - 1]) || 0, aperturas: Number(f[COL.aperturas - 1]) || 0, alertas: String(f[COL.alertas - 1] || ""),
+    ultima: fechaISO(f[COL.ultima - 1]), extra: Number(f[COL.extra - 1]) || 0, solicitud: String(f[COL.solicitud - 1] || ""),
+    enviada: fechaISO(f[COL.enviada - 1])
+  };
+}
+function invitadosDe(codigoCliente) {
+  var inv = SpreadsheetApp.getActive().getSheetByName(HOJA_INV), lista = [];
+  if (inv.getLastRow() < 2) return lista;
+  inv.getRange(2, 1, inv.getLastRow() - 1, COL.enviada).getValues().forEach(function (f) {
+    if (String(f[0]).toUpperCase() === codigoCliente && f[COL.codigo - 1]) lista.push(objetoInvitado(f));
+  });
+  return lista;
+}
+function leerPanel(p) {
+  var c = validarPanel(p.cl, p.k);
+  if (!c) return { ok: false, error: "Enlace no válido" };
+  var cfg = SpreadsheetApp.getActive().getSheetByName(HOJA_CFG), d = c.datos || {};
+  return { ok: true, codigo: c.codigo, pareja: c.pareja, novia: d.novia || "", novio: d.novio || "", fecha: d.fecha || "",
+    correo: c.correo, mensaje: d.mensajeWhatsApp || String(cfg.getRange("B2").getValue() || ""), base: baseInvitacion(),
+    invitados: invitadosDe(c.codigo) };
+}
+function limpiarTelefono(t) {
+  var d = String(t || "").replace(/\D/g, "");
+  if (d.length === 10) d = "52" + d; // número de México sin lada de país
+  return d;
+}
+function accionPanel(p) {
+  var c = validarPanel(p.c, p.k);
+  if (!c) return { ok: false, error: "Enlace no válido" };
+  var ss = SpreadsheetApp.getActive(), inv = ss.getSheetByName(HOJA_INV), cli = ss.getSheetByName(HOJA_CLI);
+  var g = p.codigo ? buscarInvitado(p.codigo) : null;
+  if (p.codigo && (!g || g.cliente !== c.codigo)) return { ok: false, error: "Invitado no encontrado" };
+
+  if (p.accion === "panelGuardar") {
+    var nombre = String(p.nombre || "").trim().slice(0, 120), pases = Math.min(50, Math.max(1, Math.round(Number(p.pases) || 1)));
+    if (!nombre) return { ok: false, error: "Falta el nombre" };
+    var tel = limpiarTelefono(p.telefono);
+    if (g) {
+      inv.getRange(g.fila, COL.nombre, 1, 3).setValues([[nombre, pases, tel]]);
+    } else {
+      var usados = {};
+      if (inv.getLastRow() > 1) inv.getRange(2, COL.codigo, inv.getLastRow() - 1, 1).getValues().forEach(function (f) { if (f[0]) usados[String(f[0]).toUpperCase()] = true; });
+      var codigo = nuevoCodigo(usados, 5), fila = inv.getLastRow() + 1;
+      inv.getRange(fila, COL.telefono).setNumberFormat("@");
+      inv.getRange(fila, 1, 1, 5).setValues([[c.codigo, codigo, nombre, pases, tel]]);
+      formulasInvitado(inv, fila);
+      inv.getRange(fila, COL.estado).setValue("⏳ Sin abrir");
+      g = { fila: fila, codigo: codigo };
+    }
+  } else if (p.accion === "panelBorrar") {
+    if (!g) return { ok: false, error: "Falta el invitado" };
+    inv.deleteRow(g.fila);
+    return { ok: true };
+  } else if (p.accion === "panelSolicitud") {
+    if (!g || !g.extra) return { ok: false, error: "No hay solicitud" };
+    if (p.decision === "aprobar") inv.getRange(g.fila, COL.pases).setValue(g.pases + g.extra);
+    inv.getRange(g.fila, COL.solicitud).setValue(p.decision === "aprobar" ? "✅ Aprobada" : "❌ Rechazada");
+  } else if (p.accion === "panelEnviada") {
+    if (!g) return { ok: false, error: "Falta el invitado" };
+    inv.getRange(g.fila, COL.enviada).setValue(new Date());
+  } else if (p.accion === "panelMensaje") {
+    var d = c.datos || {}; d.mensajeWhatsApp = String(p.mensaje || "").slice(0, 1000);
+    cli.getRange(c.fila, CC.datos).setValue(JSON.stringify(d));
+    return { ok: true };
+  } else if (p.accion === "panelCorreo") {
+    var correo = String(p.correo || "").trim();
+    if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return { ok: false, error: "Correo no válido" };
+    cli.getRange(c.fila, CC.correo).setValue(correo);
+    return { ok: true };
+  } else return { ok: false, error: "Acción desconocida" };
+
+  var g2 = buscarInvitado(g.codigo);
+  actualizarInvitado(g2);
+  return { ok: true, invitado: objetoInvitado(inv.getRange(g2.fila, 1, 1, COL.enviada).getValues()[0]) };
+}
+
+/* ================= AVISOS POR CORREO A LA PAREJA ================= */
+function enlacePanel(c) { return baseInvitacion() + "panel.html?c=" + c.codigo + "&k=" + c.clavePanel; }
+function puedeEnviarCorreo() { try { return MailApp.getRemainingDailyQuota() > 3; } catch (e) { return false; } }
+
+// Al instante: un invitado pide más lugares
+function avisarSolicitud(g, extra, p) {
+  try {
+    var c = buscarCliente(g.cliente);
+    if (!c || !c.correo || !puedeEnviarCorreo()) return;
+    MailApp.sendEmail(c.correo, "🙋 " + g.nombre + " pide " + extra + " lugar(es) más para su boda",
+      "Hola " + c.pareja + ",\n\n" + g.nombre + " confirmó " + p.cantidad + " personas, pero su invitación es para " + g.pases + ".\n" +
+      "Pide " + extra + " lugar(es) extra." + (p.acompanantes ? "\nAcompañantes: " + p.acompanantes : "") +
+      (p.quien ? "\nConfirmó: " + p.quien : "") + (p.mensaje ? "\nMensaje: " + p.mensaje : "") +
+      "\n\nAprueben o rechacen la solicitud desde su panel:\n" + enlacePanel(c) + "\n\n💍");
+  } catch (e) {}
+}
+
+// Una vez al día: resumen de confirmaciones para cada pareja
+function resumenDiario() {
+  var ss = SpreadsheetApp.getActive(), props = PropertiesService.getScriptProperties();
+  var desde = Number(props.getProperty("ULTIMO_RESUMEN")) || (Date.now() - 24 * 3600e3), ahora = Date.now();
+  var res = ss.getSheetByName(HOJA_RES), porCliente = {};
+  if (res.getLastRow() > 1) res.getRange(2, 1, res.getLastRow() - 1, 13).getValues().forEach(function (f) {
+    var t = f[0] instanceof Date ? f[0].getTime() : 0;
+    if (t > desde && t <= ahora && f[1]) (porCliente[String(f[1]).toUpperCase()] = porCliente[String(f[1]).toUpperCase()] || []).push(f);
+  });
+  Object.keys(porCliente).forEach(function (cod) {
+    var c = buscarCliente(cod);
+    if (!c || !c.correo || !puedeEnviarCorreo()) return;
+    var lineas = porCliente[cod].map(function (f) {
+      return (f[6] === "Sí" ? "✅ " + f[3] + ": " + f[7] + " persona(s)" : "❌ " + f[3] + ": no podrá asistir") +
+        (f[5] && f[5] !== f[3] ? " (confirmó " + f[5] + ")" : "") + (f[9] ? "\n     💬 \"" + f[9] + "\"" : "");
+    });
+    var lista = invitadosDe(c.codigo), personas = 0, si = 0, no = 0, pendientes = 0, solicitudes = 0;
+    lista.forEach(function (i) {
+      if (i.estado.indexOf("No asistirá") !== -1) no++; else if (i.estado.indexOf("Asistirá") !== -1) { si++; personas += Number(i.asistiran) || 0; } else pendientes++;
+      if (i.solicitud.indexOf("Pendiente") !== -1) solicitudes++;
+    });
+    MailApp.sendEmail(c.correo, "💌 Resumen de su boda: " + porCliente[cod].length + " respuesta(s) nueva(s)",
+      "Hola " + c.pareja + ",\n\nEstas son las respuestas de hoy:\n\n" + lineas.join("\n") +
+      "\n\nTotal hasta ahora: " + personas + " personas confirmadas · " + si + " invitaciones confirmadas · " + no + " no asistirán · " + pendientes + " sin responder" +
+      (solicitudes ? "\n🙋 Tienen " + solicitudes + " solicitud(es) de lugares extra esperando su respuesta." : "") +
+      "\n\nVean todo en su panel:\n" + enlacePanel(c) + "\n\n💍");
+  });
+  props.setProperty("ULTIMO_RESUMEN", String(ahora));
+}
+
+function activarResumenDiario(silencioso) {
+  try {
+    var existe = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === "resumenDiario"; });
+    if (!existe) ScriptApp.newTrigger("resumenDiario").timeBased().everyDays(1).atHour(20).create();
+    if (silencioso !== true) SpreadsheetApp.getActive().toast("Resumen diario activado: se envía cada noche a las parejas con correo.", "💍", 6);
+  } catch (e) { if (silencioso !== true) throw e; }
 }
 
 /* "Juan Pérez" coincide con "Familia Pérez"; "Carlos Ruiz" no coincide con "Ana López" */
