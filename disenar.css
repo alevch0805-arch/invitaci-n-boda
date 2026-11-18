@@ -252,3 +252,6 @@ label.check input { width: 18px; height: 18px; accent-color: var(--acento); }
 .item-lista input { margin-top: 0; }
 @media (max-width: 480px) { .item-lista { grid-template-columns: 1fr 32px; } .item-lista input[data-k="rol"] { grid-column: 1; } }
 .seccion-extra .borrar, .item-lista .borrar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--linea); background: #fff; color: var(--acento); cursor: pointer; }
+
+.modo-canva { display: grid; gap: 6px; background: var(--fondo); border-radius: 10px; padding: 10px; }
+.ok-canva { color: var(--ok) !important; }

@@ -425,7 +425,8 @@
       '<div id="listaSecciones" class="lista"></div>' +
       '<div class="botones-secciones"><button type="button" class="btn-texto" data-nueva="texto">+ Texto (hospedaje, nota…)</button>' +
       '<button type="button" class="btn-texto" data-nueva="lista">+ Lista (padrinos…)</button>' +
-      '<button type="button" class="btn-texto" data-nueva="galeria">+ Galería de fotos</button></div>';
+      '<button type="button" class="btn-texto" data-nueva="galeria">+ Galería de fotos</button>' +
+      '<button type="button" class="btn-texto" data-nueva="canva">+ 🎨 Diseño de Canva</button></div>';
 
     function deslizador(ruta, texto, valor, min, max) {
       return '<label class="deslizador">' + texto + ' <output>' + valor + '%</output><input type="range" min="' + min + '" max="' + max + '" value="' + valor + '" data-ruta="' + ruta + '" /></label>';
@@ -510,7 +511,10 @@
     $$("[data-nueva]", cuerpo).forEach(function (b) {
       b.addEventListener("click", function () {
         var t = b.dataset.nueva;
-        E.secciones.push({ tipo: t, titulo: t === "lista" ? "Padrinos" : t === "galeria" ? "Nuestra historia" : "Hospedaje",
+        if (t === "canva") {
+          E.secciones.push({ tipo: "canva", modo: "imagen", titulo: "", texto: "", imagenes: [], enlace: "", proporcion: 177.78,
+            sinMargen: true, posicion: "despues-foto1", fondoAlterno: false });
+        } else E.secciones.push({ tipo: t, titulo: t === "lista" ? "Padrinos" : t === "galeria" ? "Nuestra historia" : "Hospedaje",
           texto: "", items: t === "lista" ? [{ nombre: "", rol: "" }] : [], imagenes: [], posicion: "antes-confirmacion", fondoAlterno: false });
         pintarSecciones(); marcarCambio();
       });
@@ -518,10 +522,22 @@
     pintarSecciones();
   }
 
+  // Acepta el enlace de Canva (ver o insertar) o el código HTML completo de "Insertar"
+  function leerEnlaceCanva(texto) {
+    texto = String(texto || "");
+    var m = texto.match(/https:\/\/(?:www\.)?canva\.com\/design\/([\w-]+)(?:\/([\w-]+))?\/(?:view|edit|watch)/);
+    if (!m) return null;
+    var pt = texto.match(/padding-top:\s*([\d.]+)%/);
+    return { url: "https://www.canva.com/design/" + m[1] + (m[2] ? "/" + m[2] : "") + "/view?embed", proporcion: pt ? Number(pt[1]) : null };
+  }
+
   function pintarSecciones() {
     var E = Z.especial, cont = $("listaSecciones");
-    var posiciones = { "despues-foto1": "Después de la foto 1", "despues-itinerario": "Después del itinerario", "antes-confirmacion": "Antes de confirmar" };
-    var nombresTipo = { texto: "📝 Texto", lista: "👥 Lista", galeria: "🖼 Galería" };
+    var posiciones = { "inicio": "Al inicio (antes de los nombres)", "despues-foto1": "Después de la foto 1", "despues-itinerario": "Después del itinerario",
+      "antes-confirmacion": "Antes de confirmar", "antes-cierre": "Al final (antes del cierre)" };
+    var nombresTipo = { texto: "📝 Texto", lista: "👥 Lista", galeria: "🖼 Galería", canva: "🎨 Diseño de Canva" };
+    var proporciones = [["177.78", "Historia / celular (9:16)"], ["140", "Invitación 5×7 vertical"], ["129.41", "Carta vertical"],
+      ["100", "Cuadrado"], ["56.25", "Horizontal (16:9)"]];
     cont.innerHTML = E.secciones.map(function (s, i) {
       var extra = "";
       if (s.tipo === "lista") {
@@ -536,10 +552,30 @@
           return '<div class="ref-img" style="background-image:url(\'' + esc(u) + '\')"><button type="button" data-quitar-img="' + j + '" aria-label="Quitar">✕</button></div>';
         }).join("") + '</div><label class="btn-subir chico">Subir fotos<input type="file" accept="image/*" multiple hidden data-galeria /></label>';
       }
+      if (s.tipo === "canva") {
+        var enlaceOk = /view\?embed$/.test(s.enlace || "");
+        extra = '<div class="modo-canva">' +
+          '<label class="check"><input type="radio" name="modo' + i + '" data-modo="imagen"' + (s.modo !== "enlace" ? " checked" : "") + ' /> Imagen descargada (PNG o JPG)</label>' +
+          '<label class="check"><input type="radio" name="modo' + i + '" data-modo="enlace"' + (s.modo === "enlace" ? " checked" : "") + ' /> Enlace vivo (se actualiza al editar en Canva)</label></div>';
+        if (s.modo === "enlace") {
+          extra += '<label>Enlace o código de “Insertar” de Canva<textarea rows="3" data-canva-enlace placeholder="Pega aquí lo que copiaste en Canva: Compartir → Insertar">' +
+            esc(s.enlaceOriginal || s.enlace || "") + "</textarea></label>" +
+            '<p class="nota ' + (enlaceOk ? "ok-canva" : "") + '" data-canva-estado>' + (enlaceOk ? "✓ Enlace reconocido" : (s.enlace || s.enlaceOriginal ? "⚠️ No reconozco ese enlace. Usa Compartir → Insertar en Canva." : "")) + "</p>" +
+            '<label>Proporción del diseño<select data-sk="proporcion">' + proporciones.map(function (pr) {
+              return '<option value="' + pr[0] + '"' + (String(s.proporcion) === pr[0] ? " selected" : "") + ">" + pr[1] + "</option>";
+            }).join("") + (proporciones.some(function (pr) { return String(s.proporcion) === pr[0]; }) ? "" : '<option value="' + esc(s.proporcion) + '" selected>Del código de Canva</option>') + "</select></label>";
+        } else {
+          extra += '<div class="ref-imagenes">' + (s.imagenes || []).map(function (u, j) {
+            return '<div class="ref-img" style="background-image:url(\'' + esc(u) + '\')"><button type="button" data-quitar-img="' + j + '" aria-label="Quitar">✕</button></div>';
+          }).join("") + '</div><label class="btn-subir chico">Subir páginas de Canva<input type="file" accept="image/*" multiple hidden data-galeria /></label>' +
+          '<p class="nota">Si subes varias, se muestran una debajo de otra en el orden en que las subas.</p>';
+        }
+        extra += '<label class="check"><input type="checkbox" data-sk="sinMargen"' + (s.sinMargen !== false ? " checked" : "") + " /> De orilla a orilla (sin márgenes)</label>";
+      }
       return '<div class="seccion-extra" data-i="' + i + '"><div class="se-top"><strong>' + nombresTipo[s.tipo] + '</strong>' +
         '<button type="button" class="btn-quitar" data-subir-sec="-1">↑</button><button type="button" class="btn-quitar" data-subir-sec="1">↓</button>' +
         '<button type="button" class="borrar" data-borrar-sec aria-label="Eliminar sección">✕</button></div>' +
-        '<label>Título<input type="text" data-sk="titulo" value="' + esc(s.titulo) + '" /></label>' +
+        '<label>Título <span class="opc">' + (s.tipo === "canva" ? "(opcional)" : "") + '</span><input type="text" data-sk="titulo" value="' + esc(s.titulo) + '" /></label>' +
         '<label>Texto <span class="opc">(opcional)</span><textarea rows="2" data-sk="texto">' + esc(s.texto) + "</textarea></label>" + extra +
         '<div class="fila2"><label>Dónde aparece<select data-sk="posicion">' + Object.keys(posiciones).map(function (k) {
           return '<option value="' + k + '"' + (s.posicion === k ? " selected" : "") + ">" + posiciones[k] + "</option>";
@@ -569,9 +605,28 @@
       if (gal) gal.addEventListener("change", function () {
         var archivos = Array.prototype.slice.call(gal.files || []), boton = gal.parentNode;
         boton.classList.add("ocupado"); boton.firstChild.textContent = "Subiendo…";
-        Promise.all(archivos.map(function (f) {
-          return subir(f, "galeria", s.titulo || "Galería", 1600).then(function (url) { s.imagenes.push(url); }).catch(function () {});
-        })).then(function () { pintarSecciones(); marcarCambio(); irA("extra" + i); });
+        // En orden: una por una, para que las páginas de Canva queden en la secuencia elegida
+        archivos.reduce(function (cadena, f) {
+          return cadena.then(function () {
+            var png = s.tipo === "canva" && f.type === "image/png";
+            return subir(f, png ? "deco" : "galeria", s.titulo || (s.tipo === "canva" ? "Canva" : "Galería"), s.tipo === "canva" ? 1800 : 1600)
+              .then(function (url) { s.imagenes.push(url); }).catch(function () { alert("No se pudo subir " + f.name); });
+          });
+        }, Promise.resolve()).then(function () { pintarSecciones(); marcarCambio(); irA("extra" + i); });
+      });
+      $$("[data-modo]", el).forEach(function (r) {
+        r.addEventListener("change", function () { s.modo = r.dataset.modo; pintarSecciones(); marcarCambio(); });
+      });
+      var ce = el.querySelector("[data-canva-enlace]");
+      if (ce) ce.addEventListener("input", function () {
+        var r = leerEnlaceCanva(ce.value), estadoEl = el.querySelector("[data-canva-estado]");
+        s.enlaceOriginal = ce.value.trim();
+        s.enlace = r ? r.url : "";
+        if (r && r.proporcion) s.proporcion = r.proporcion;
+        estadoEl.textContent = r ? "✓ Enlace reconocido" : (ce.value.trim() ? "⚠️ No reconozco ese enlace. Usa Compartir → Insertar en Canva." : "");
+        estadoEl.classList.toggle("ok-canva", !!r);
+        if (r && r.proporcion) { var sel = el.querySelector('[data-sk="proporcion"]'); if (sel) { pintarSecciones(); } }
+        marcarCambio(); if (r) irA("extra" + i);
       });
       el.querySelector("[data-borrar-sec]").addEventListener("click", function () {
         if (!confirm("¿Eliminar esta sección?")) return;

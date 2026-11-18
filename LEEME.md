@@ -129,3 +129,13 @@ Cómo funciona:
 - Estos ajustes solo los cambias tú: aunque el cliente siga editando su diseño, no se pierden.
 - Como administrador puedes editar **aunque el diseño ya esté aprobado**.
 - **No edites al mismo tiempo que el cliente**, porque lo último que se guarda es lo que queda.
+
+## 🎨 Usar Canva
+
+**Decoraciones:** diseña el adorno en Canva y descárgalo con **Compartir → Descargar → PNG → "Fondo transparente"** (la casilla requiere Canva Pro). Luego súbelo en ⭐ Ajustes especiales → Decoraciones propias.
+
+**Páginas o secciones completas:** en ⭐ Ajustes especiales → Secciones extra → **+ 🎨 Diseño de Canva**.
+- **Imagen descargada:** descarga tus páginas como PNG o JPG y súbelas. Si subes varias, se muestran una debajo de otra.
+- **Enlace vivo:** en Canva ve a **Compartir → Insertar** (o "Más → Insertar"), copia el código y pégalo. La proporción se detecta sola. Cada vez que edites en Canva, la invitación se actualiza.
+- Puedes elegir dónde aparece (al inicio, después de la foto 1, después del itinerario, antes de confirmar o al final) y si va de orilla a orilla.
+- Con el enlace vivo, Canva puede mostrar su pequeña barra al pie del diseño. Si prefieres que no aparezca, usa la opción de imagen.

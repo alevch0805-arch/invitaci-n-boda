@@ -372,10 +372,11 @@
     root.setProperty("--mono-tam", Math.round(120 * (mo.tam || 100) / 100) + "px");
 
     // Secciones extra
-    ["despues-foto1", "despues-itinerario", "antes-confirmacion"].forEach(function (pos) { $("extra-" + pos).innerHTML = ""; });
+    ["inicio", "despues-foto1", "despues-itinerario", "antes-confirmacion", "antes-cierre"].forEach(function (pos) { $("extra-" + pos).innerHTML = ""; });
     (e.secciones || []).forEach(function (s, i) {
       var cont = $("extra-" + (s.posicion || "antes-confirmacion"));
-      if (!cont || !(s.titulo || s.texto || (s.items || []).length || (s.imagenes || []).length)) return;
+      if (!cont || !(s.titulo || s.texto || (s.items || []).length || (s.imagenes || []).length || s.enlace)) return;
+      if (s.tipo === "canva") { cont.insertAdjacentHTML("beforeend", seccionCanva(s, i)); return; }
       var html = '<section class="seccion extra revelar visible' + (s.fondoAlterno ? " beige" : "") + '" data-seccion="extra' + i + '">' +
         (s.titulo ? '<h2 class="titulo">' + esc(s.titulo) + "</h2>" : "");
       if (s.texto) html += '<p class="texto texto-extra">' + esc(s.texto) + "</p>";
@@ -389,6 +390,22 @@
       }
       cont.insertAdjacentHTML("beforeend", html + "</section>");
     });
+  }
+
+  /* Sección diseñada en Canva: imágenes exportadas o enlace vivo (Compartir → Insertar) */
+  function seccionCanva(s, i) {
+    var html = '<section class="seccion extra canva revelar visible' + (s.sinMargen !== false ? " sin-margen" : "") + (s.fondoAlterno ? " beige" : "") +
+      '" data-seccion="extra' + i + '">' + (s.titulo ? '<h2 class="titulo">' + esc(s.titulo) + "</h2>" : "") +
+      (s.texto ? '<p class="texto texto-extra">' + esc(s.texto) + "</p>" : "");
+    if (s.modo === "enlace") {
+      if (/^https:\/\/www\.canva\.com\/design\/[\w-]+(\/[\w-]+)?\/view\?embed$/.test(s.enlace || "")) {
+        html += '<div class="canva-marco" style="padding-top:' + (Number(s.proporcion) || 177.78) + '%">' +
+          '<iframe loading="lazy" src="' + esc(s.enlace) + '" allowfullscreen allow="fullscreen" title="' + esc(s.titulo || "Diseño") + '"></iframe></div>';
+      }
+    } else {
+      html += '<div class="canva-imgs">' + (s.imagenes || []).map(function (u) { return '<img src="' + esc(u) + '" alt="" loading="lazy" />'; }).join("") + "</div>";
+    }
+    return html + "</section>";
   }
 
   /* ---------- Inicio ---------- */
