@@ -400,3 +400,8 @@ body.con-mono #selloIniciales, body.con-mono .cortina-iniciales, body.con-mono .
 .estado-solicitud[hidden] { display: none; }
 .estado-solicitud.aprobada { background: #E3EBDA; border-color: #B8CBA5; }
 .estado-solicitud.rechazada { background: var(--blanco); border-color: var(--beige); }
+
+/* ===== Modo Canva (?canva=1) ===== */
+body.modo-canva .sobre, body.modo-canva .btn-musica, body.modo-canva .demo, body.modo-canva .flecha { display: none !important; }
+body.modo-canva .revelar { opacity: 1; transform: none; transition: none; }
+body.modo-canva .hero { min-height: 0; padding: 72px 16px; }

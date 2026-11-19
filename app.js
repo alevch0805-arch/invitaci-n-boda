@@ -77,6 +77,7 @@
   var codigo = (url.get("i") || "").trim().toUpperCase();
   var codigoCliente = (url.get("c") || "").trim().toUpperCase();
   var preview = url.get("preview") === "1";
+  var modoCanva = url.get("canva") === "1";
   var demo = !C.urlHojaDeCalculo;
   var dispositivo = idDispositivo();
   var invitado = { nombre: "", pases: 0 };
@@ -295,7 +296,22 @@
 
   function mostrar() {
     aplicarDiseno(Z); pintarContenido(); aplicarEspecial(Z.especial || {}); pintarInvitado(); cuenta();
+    if (modoCanva) prepararCanva();
     document.body.classList.remove("cargando");
+  }
+
+  /* Modo Canva (?canva=1): invitación completa y estática, cada sección es una página para importarla a Canva */
+  function prepararCanva() {
+    var b = document.body;
+    b.classList.add("modo-canva"); b.classList.remove("bloqueado");
+    $("sobre").classList.add("abierto"); $("demo").hidden = true; $("btnMusica").hidden = true;
+    document.querySelectorAll(".revelar").forEach(function (el) { el.classList.add("visible"); });
+    document.querySelectorAll("main section, main footer").forEach(function (el) {
+      if (!el.hidden && !el.closest("[data-document-role]")) {
+        el.setAttribute("data-document-role", "page");
+        var t = el.querySelector(".titulo, h1"); if (t) el.setAttribute("data-label", t.textContent.trim());
+      }
+    });
   }
 
   /* ---------- Ajustes especiales (solo los pone el administrador) ---------- */
