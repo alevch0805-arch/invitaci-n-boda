@@ -450,3 +450,13 @@ body.modo-canva .hero { min-height: 0; padding: 72px 16px; }
 #rsvp.con-canva { padding-bottom: 48px !important; }
 #rsvp.con-canva > form, #rsvp.con-canva > .gracias { padding: 24px 16px 0; }
 #rsvp.con-canva > .reservados { margin-top: 24px; }
+
+/* ===== Transiciones al abrir ===== */
+/* La portada (nombres) aparece suave al abrir el sobre, elemento por elemento */
+.hero > * { transition: opacity 1.1s ease, transform 1.1s ease; }
+body:not(.invitacion-abierta):not(.preview):not(.modo-canva) .hero > * { opacity: 0; transform: translateY(18px); }
+.hero > *:nth-child(2) { transition-delay: .1s; } .hero > *:nth-child(3) { transition-delay: .2s; }
+.hero > *:nth-child(4) { transition-delay: .3s; } .hero > *:nth-child(5) { transition-delay: .45s; } .hero > *:nth-child(6) { transition-delay: .6s; }
+/* Las páginas de Canva guardan su espacio mientras cargan (formato celular 9:16) */
+.pagina-canva { aspect-ratio: auto 1080 / 1920; }
+@media (prefers-reduced-motion: reduce) { .hero > * { opacity: 1 !important; transform: none !important; } }

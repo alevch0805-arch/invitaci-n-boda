@@ -109,8 +109,8 @@
 
     var s = $("sobre");
     s.classList.toggle("estilo-cortina", z.portada === "cortina");
-    if (z.portada === "directo" && !preview) { s.classList.add("abierto"); b.classList.remove("bloqueado"); }
-    if (z.portada === "directo" && preview) { s.classList.add("abriendo", "abierto"); b.classList.remove("bloqueado"); }
+    if (z.portada === "directo" && !preview) { s.classList.add("abierto"); b.classList.remove("bloqueado"); setTimeout(activarTransiciones, 50); }
+    if (z.portada === "directo" && preview) { s.classList.add("abriendo", "abierto"); b.classList.remove("bloqueado"); b.classList.add("invitacion-abierta"); }
   }
 
   /* ---------- Contenido ---------- */
@@ -281,18 +281,29 @@
   }
 
   /* ---------- Portada ---------- */
+  var observador = null;
+  function activarTransiciones() {
+    document.body.classList.add("invitacion-abierta");
+    if (preview || modoCanva) { document.querySelectorAll(".revelar").forEach(function (el) { el.classList.add("visible"); }); return; }
+    if (!("IntersectionObserver" in window)) { document.querySelectorAll(".revelar").forEach(function (el) { el.classList.add("visible"); }); return; }
+    if (!observador) observador = new IntersectionObserver(function (en) {
+      en.forEach(function (x) { if (x.isIntersecting) { x.target.classList.add("visible"); observador.unobserve(x.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".revelar:not(.visible)").forEach(function (el) { observador.observe(el); });
+  }
+
   function abrirSobre() {
     var s = $("sobre");
     if (s.classList.contains("abriendo")) return;
     s.classList.add("abriendo");
     var espera = s.classList.contains("portada-canva") ? 1100 : s.classList.contains("estilo-cortina") ? 1300 : 900;
-    setTimeout(function () { s.classList.add("abierto"); document.body.classList.remove("bloqueado"); }, espera);
+    setTimeout(function () { s.classList.add("abierto"); document.body.classList.remove("bloqueado"); activarTransiciones(); }, espera);
     if (D.musica) { $("audio").play().then(function () { $("btnMusica").classList.add("sonando"); }).catch(function () {}); }
   }
   function cerrarSobre() {
     var s = $("sobre");
     s.classList.remove("abriendo", "abierto");
-    document.body.classList.add("bloqueado");
+    document.body.classList.add("bloqueado"); document.body.classList.remove("invitacion-abierta");
     window.scrollTo(0, 0);
   }
 
@@ -300,6 +311,7 @@
     aplicarDiseno(Z); pintarContenido(); aplicarEspecial(Z.especial || {}); pintarInvitado(); cuenta();
     if (modoCanva) prepararCanva();
     document.body.classList.remove("cargando");
+    if (document.body.classList.contains("invitacion-abierta")) activarTransiciones(); // secciones que se agregaron después
   }
 
   /* Modo Canva (?canva=1): invitación completa y estática, cada sección es una página para importarla a Canva */
@@ -401,7 +413,7 @@
       var cont = $("extra-" + (s.posicion || "antes-confirmacion"));
       if (!cont || !(s.titulo || s.texto || (s.items || []).length || (s.imagenes || []).length || s.enlace)) return;
       if (s.tipo === "canva") { cont.insertAdjacentHTML("beforeend", seccionCanva(s, i)); return; }
-      var html = '<section class="seccion extra revelar visible' + (s.fondoAlterno ? " beige" : "") + '" data-seccion="extra' + i + '">' +
+      var html = '<section class="seccion extra revelar' + (preview || modoCanva ? " visible" : "") + (s.fondoAlterno ? " beige" : "") + '" data-seccion="extra' + i + '">' +
         (s.titulo ? '<h2 class="titulo">' + esc(s.titulo) + "</h2>" : "");
       if (s.texto) html += '<p class="texto texto-extra">' + esc(s.texto) + "</p>";
       if (s.tipo === "lista" && (s.items || []).length) {
@@ -464,7 +476,7 @@
 
   /* Sección diseñada en Canva: imágenes exportadas o enlace vivo (Compartir → Insertar) */
   function seccionCanva(s, i) {
-    var html = '<section class="seccion extra canva revelar visible' + (s.sinMargen !== false ? " sin-margen" : "") + (s.fondoAlterno ? " beige" : "") +
+    var html = '<section class="seccion extra canva revelar' + (preview || modoCanva ? " visible" : "") + (s.sinMargen !== false ? " sin-margen" : "") + (s.fondoAlterno ? " beige" : "") +
       '" data-seccion="extra' + i + '">' + (s.titulo ? '<h2 class="titulo">' + esc(s.titulo) + "</h2>" : "") +
       (s.texto ? '<p class="texto texto-extra">' + esc(s.texto) + "</p>" : "");
     if (s.modo === "enlace") {
@@ -501,12 +513,8 @@
     var previa = leer("boda_respuesta_" + codigo);
     if (previa && !preview) { try { mostrarGracias(JSON.parse(previa)); } catch (e) {} }
 
-    if ("IntersectionObserver" in window && !preview) {
-      var io = new IntersectionObserver(function (en) {
-        en.forEach(function (x) { if (x.isIntersecting) { x.target.classList.add("visible"); io.unobserve(x.target); } });
-      }, { threshold: 0.12 });
-      document.querySelectorAll(".revelar").forEach(function (el) { io.observe(el); });
-    } else document.querySelectorAll(".revelar").forEach(function (el) { el.classList.add("visible"); });
+    // Las transiciones arrancan cuando se abre la invitación (no detrás del sobre)
+    if (preview) document.querySelectorAll(".revelar").forEach(function (el) { el.classList.add("visible"); });
 
     // --- Vista previa dentro del diseñador ---
     if (preview) {
