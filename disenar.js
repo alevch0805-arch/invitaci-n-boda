@@ -384,8 +384,20 @@
       ["esquinaInf", "Esquinas de abajo", "Al final, antes del cierre"], ["fondo", "Imagen de fondo", "Detrás de toda la invitación"],
       ["monograma", "Monograma / logo", "En el sello del sobre, la cortina y el cierre"]];
 
+    E.canva = E.canva || { transicion: "zoom", textoPortada: "Toca para abrir", paginas: {} };
+    E.canva.paginas = E.canva.paginas || {};
     cuerpo.innerHTML =
       '<p class="nota">Solo tú ves este paso. Estos ajustes se aplican únicamente a esta pareja y el cliente no puede cambiarlos.</p>' +
+      '<h4>🎨 Páginas de Canva</h4>' +
+      '<p class="nota">Cada página de Canva reemplaza el diseño de su sección. Lo que funciona se queda: nombre del invitado, botón de mapa, cuenta regresiva y confirmación.<br>' +
+      '<b>En Canva:</b> Compartir → Descargar → PNG → <i>Todas las páginas</i>. Descomprime el archivo y sube aquí todas las imágenes juntas.</p>' +
+      '<label class="btn-subir">Subir todas las páginas de Canva<input type="file" accept="image/*" multiple hidden id="inpCanvaTodas" /></label>' +
+      '<p class="nota" id="canvaEstado"></p>' +
+      '<div class="lista" id="listaCanva"></div>' +
+      '<div class="fila2"><label>Animación al abrir<select id="canvaTrans">' +
+      [["zoom", "Acercarse al sello"], ["cortina", "Abrir como cortina"], ["deslizar", "Deslizar hacia arriba"]].map(function (t) {
+        return '<option value="' + t[0] + '"' + (E.canva.transicion === t[0] ? " selected" : "") + ">" + t[1] + "</option>";
+      }).join("") + '</select></label><label>Texto del botón de la portada<input type="text" id="canvaTexto" value="' + esc(E.canva.textoPortada || "Toca para abrir") + '" /></label></div>' +
 
       '<h4>🔤 Tipos de letra</h4>' +
       '<p class="nota">Escribe el nombre exacto de cualquier letra de <a href="https://fonts.google.com" target="_blank" rel="noopener">Google Fonts</a>. Déjalo vacío para usar la del paso 6.</p>' +
@@ -520,6 +532,78 @@
       });
     });
     pintarSecciones();
+    enlazarCanva();
+  }
+
+  /* ---- Páginas de Canva ---- */
+  var SLOTS_CANVA = [["portada", "Portada (sobre)"], ["hero", "Nombres"], ["fotos", "Foto 1"], ["cuenta", "Cuenta regresiva"], ["lugares", "Dónde y cuándo"],
+    ["itinerario", "Itinerario"], ["foto2", "Foto 2"], ["vestimenta", "Vestimenta"], ["regalos", "Regalos"], ["rsvp", "Confirmación"], ["cierre", "Cierre"]];
+  // Orden típico de una invitación hecha en Canva (página 1 = portada, 2 = nombres…)
+  var ORDEN_CANVA = ["portada", "hero", "lugares", "itinerario", "foto2", "vestimenta", "regalos", "rsvp", "cierre", "cuenta", "fotos"];
+  var IR_CANVA = { portada: "portada", hero: "hero", fotos: "fotos", cuenta: "cuenta", lugares: "lugares", itinerario: "itinerario", foto2: "foto2",
+    vestimenta: "vestimenta", regalos: "regalos", rsvp: "rsvp", cierre: "cierre" };
+
+  function pintarCanva() {
+    var P = Z.especial.canva.paginas;
+    $("listaCanva").innerHTML = SLOTS_CANVA.map(function (s) {
+      var p = P[s[0]] || {}, modo = p.modo || "normal";
+      var opciones = [["normal", "Diseño normal"], ["canva", "Página de Canva"], ["ocultar", "Ocultar"]];
+      if (s[0] === "portada") opciones = [["normal", "Sobre normal"], ["canva", "Página de Canva"]];
+      return '<div class="slot-canva" data-slot="' + s[0] + '"><div class="slot-mini"' + (p.url ? ' style="background-image:url(\'' + esc(p.url) + '\')"' : "") + '></div>' +
+        '<div class="slot-info"><strong>' + s[1] + '</strong><select data-slot-modo>' + opciones.map(function (o) {
+          return '<option value="' + o[0] + '"' + (modo === o[0] ? " selected" : "") + (o[0] === "canva" && !p.url ? " disabled" : "") + ">" + o[1] + "</option>";
+        }).join("") + '</select><div class="slot-botones"><label class="btn-subir chico">' + (p.url ? "Cambiar" : "Subir") +
+        '<input type="file" accept="image/*" hidden data-slot-subir /></label>' + (p.url ? '<button type="button" class="btn-quitar" data-slot-quitar>Quitar</button>' : "") +
+        "</div></div></div>";
+    }).join("");
+    $$("#listaCanva .slot-canva").forEach(function (el) {
+      var k = el.dataset.slot;
+      el.querySelector("[data-slot-modo]").addEventListener("change", function () {
+        P[k] = P[k] || {}; P[k].modo = this.value; marcarCambio(); irA(IR_CANVA[k]);
+      });
+      el.querySelector("[data-slot-subir]").addEventListener("change", function () {
+        var f = this.files[0]; if (!f) return;
+        var boton = this.parentNode; boton.classList.add("ocupado"); boton.firstChild.textContent = "Subiendo…";
+        subirPaginaCanva(f, k).then(function () { pintarCanva(); marcarCambio(); irA(IR_CANVA[k]); })
+          .catch(function (e) { alert("No se pudo subir: " + e.message); pintarCanva(); });
+      });
+      var q = el.querySelector("[data-slot-quitar]");
+      if (q) q.addEventListener("click", function () { P[k] = { modo: "normal" }; pintarCanva(); marcarCambio(); });
+    });
+  }
+  function subirPaginaCanva(f, k) {
+    return subir(f, "galeria", "Canva - " + k, 2000).then(function (url) {
+      var P = Z.especial.canva.paginas; P[k] = { url: url, modo: "canva" };
+    });
+  }
+  function enlazarCanva() {
+    var C2 = Z.especial.canva;
+    pintarCanva();
+    $("canvaTrans").addEventListener("change", function () { C2.transicion = this.value; marcarCambio(); irA("portada"); });
+    $("canvaTexto").addEventListener("input", function () { C2.textoPortada = this.value; marcarCambio(); });
+    $("inpCanvaTodas").addEventListener("change", function () {
+      var inp = this, boton = inp.parentNode, estado = $("canvaEstado");
+      var archivos = Array.prototype.slice.call(inp.files || []).sort(function (a, b) {
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      });
+      if (!archivos.length) return;
+      if (archivos.length > ORDEN_CANVA.length) archivos = archivos.slice(0, ORDEN_CANVA.length);
+      boton.classList.add("ocupado");
+      var hechos = 0;
+      archivos.reduce(function (cadena, f, i) {
+        return cadena.then(function () {
+          estado.textContent = "Subiendo página " + (i + 1) + " de " + archivos.length + "…";
+          return subirPaginaCanva(f, ORDEN_CANVA[i]).then(function () { hechos++; }).catch(function () {});
+        });
+      }, Promise.resolve()).then(function () {
+        var P = C2.paginas;
+        // La foto 1 y el cierre suelen venir dentro de las páginas de Canva: se ocultan si no tienen página propia
+        ["fotos", "cierre"].forEach(function (k) { if (!P[k] || !P[k].url) P[k] = { modo: "ocultar" }; });
+        estado.textContent = "✓ " + hechos + " página(s) acomodadas. Revisa abajo que cada una esté en su sección.";
+        boton.classList.remove("ocupado"); inp.value = "";
+        pintarCanva(); marcarCambio(); irA("portada");
+      });
+    });
   }
 
   // Acepta el enlace de Canva (ver o insertar) o el código HTML completo de "Insertar"

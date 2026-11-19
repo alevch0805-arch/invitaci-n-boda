@@ -405,3 +405,48 @@ body.con-mono #selloIniciales, body.con-mono .cortina-iniciales, body.con-mono .
 body.modo-canva .sobre, body.modo-canva .btn-musica, body.modo-canva .demo, body.modo-canva .flecha { display: none !important; }
 body.modo-canva .revelar { opacity: 1; transform: none; transition: none; }
 body.modo-canva .hero { min-height: 0; padding: 72px 16px; }
+
+/* ===== Fusión con Canva ===== */
+/* Portada: la página del sobre de Canva a pantalla completa */
+.pc-capa, .pc-toca { display: none; }
+.sobre.portada-canva { background: var(--beige-claro) !important; }
+.sobre.portada-canva .sobre-contenido, .sobre.portada-canva .sobre-arco, .sobre.portada-canva .cortina { display: none !important; }
+.sobre.portada-canva .pc-capa {
+  display: block; position: absolute; inset: 0; background: var(--pc-img) center / cover no-repeat;
+  transition: transform 1s cubic-bezier(.7,0,.3,1), opacity 1s ease;
+}
+@media (min-aspect-ratio: 3/4) { .sobre.portada-canva .pc-capa { background-size: contain; } }
+.sobre.portada-canva .pc-der { display: none; }
+.sobre.portada-canva[data-trans="cortina"] .pc-der { display: block; clip-path: inset(0 0 0 50%); }
+.sobre.portada-canva[data-trans="cortina"] .pc-izq { clip-path: inset(0 50% 0 0); }
+.sobre.portada-canva .pc-toca {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 50%; bottom: max(28px, env(safe-area-inset-bottom));
+  transform: translateX(-50%); z-index: 2; text-align: center; transition: opacity .4s; width: max-content; max-width: 90vw;
+}
+.pc-nombre { font-family: var(--script); font-size: 2rem; color: var(--moca); text-shadow: 0 1px 8px rgba(255,255,255,.8); }
+.pc-nombre:empty { display: none; }
+.pc-texto {
+  background: rgba(255,255,255,.88); color: var(--moca); border: 1px solid var(--dorado); border-radius: 999px; padding: .55rem 1.3rem;
+  font-size: .72rem; letter-spacing: .25em; text-transform: uppercase; animation: latido 2s ease-in-out infinite; box-shadow: 0 6px 18px rgba(0,0,0,.12);
+}
+.sobre.portada-canva.abriendo .pc-toca { opacity: 0; }
+.sobre.portada-canva[data-trans="zoom"].abriendo .pc-capa { transform: scale(1.6); opacity: 0; }
+.sobre.portada-canva[data-trans="deslizar"].abriendo .pc-capa { transform: translateY(-100%); }
+.sobre.portada-canva[data-trans="cortina"].abriendo .pc-izq { transform: translateX(-100%); }
+.sobre.portada-canva[data-trans="cortina"].abriendo .pc-der { transform: translateX(100%); }
+.sobre.portada-canva.abriendo { background: transparent !important; transition: opacity .5s .7s, visibility .5s .7s; }
+
+/* Secciones: la página de Canva reemplaza el diseño, pero lo interactivo se queda */
+.con-canva { padding: 0 !important; min-height: 0 !important; background: none !important; }
+.con-canva > :not(.pagina-canva):not(.mantener) { display: none !important; }
+.con-canva > .mantener[hidden] { display: none !important; }
+.pagina-canva { display: block; width: 100%; height: auto; }
+.con-canva > .mantener { margin-left: auto; margin-right: auto; }
+.con-canva > .canva-extra { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 20px 16px; text-align: center; flex-direction: column; align-items: center; }
+.hero.con-canva > .canva-extra { padding: 18px 16px 10px; }
+.hero.con-canva > .canva-extra .pases-hero { margin: 0; }
+[data-seccion="cuenta"].con-canva > .mantener:first-of-type { margin-top: 24px; }
+[data-seccion="cuenta"].con-canva { padding-bottom: 32px !important; }
+#rsvp.con-canva { padding-bottom: 48px !important; }
+#rsvp.con-canva > form, #rsvp.con-canva > .gracias { padding: 24px 16px 0; }
+#rsvp.con-canva > .reservados { margin-top: 24px; }

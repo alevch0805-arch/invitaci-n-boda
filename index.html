@@ -21,6 +21,8 @@
   <div id="sobre" class="sobre" role="button" tabindex="0" aria-label="Abrir invitación">
     <div class="cortina izq"></div>
     <div class="cortina der"></div>
+    <div class="pc-capa pc-izq"></div><div class="pc-capa pc-der"></div>
+    <div class="pc-toca"><span class="pc-nombre"></span><span class="pc-texto">Toca para abrir</span></div>
     <div class="sobre-arco a1"></div>
     <div class="sobre-arco a2"></div>
     <div class="sobre-contenido">
@@ -74,14 +76,14 @@
 
     <!-- 3. CUENTA REGRESIVA -->
     <section class="seccion beige revelar" data-seccion="cuenta">
-      <p class="espaciado">Faltan</p>
-      <div class="cuenta">
+      <p class="espaciado mantener">Faltan</p>
+      <div class="cuenta mantener">
         <div><span id="cDias">00</span><small>Días</small></div>
         <div><span id="cHoras">00</span><small>Horas</small></div>
         <div><span id="cMin">00</span><small>Min</small></div>
         <div><span id="cSeg">00</span><small>Seg</small></div>
       </div>
-      <a class="btn-linea" id="btnCalendario" target="_blank" rel="noopener">Agregar al calendario</a>
+      <a class="btn-linea mantener" id="btnCalendario" target="_blank" rel="noopener">Agregar al calendario</a>
     </section>
 
     <!-- 4. LUGARES -->
@@ -119,7 +121,7 @@
     </section>
 
     <!-- 8. REGALOS -->
-    <section class="seccion beige revelar" id="seccionRegalos" data-seccion="vestimenta">
+    <section class="seccion beige revelar" id="seccionRegalos" data-seccion="regalos">
       <h2 class="titulo">Regalos</h2>
       <p class="texto" id="regalosTexto"></p>
       <div class="regalos" id="regalos"></div>
@@ -128,13 +130,13 @@
     <div id="extra-antes-confirmacion"></div>
 
     <!-- 9. CONFIRMACIÓN -->
-    <section class="seccion rsvp revelar" id="rsvp">
+    <section class="seccion rsvp revelar" id="rsvp" data-seccion="rsvp">
       <h2 class="titulo">Confirma tu asistencia</h2>
       <p class="texto">Por favor confírmanos antes del <strong id="fechaLimite"></strong></p>
-      <p class="reservados" id="reservados"></p>
-      <p class="estado-solicitud" id="estadoSolicitud" hidden></p>
+      <p class="reservados mantener" id="reservados"></p>
+      <p class="estado-solicitud mantener" id="estadoSolicitud" hidden></p>
 
-      <form id="formRsvp" novalidate>
+      <form id="formRsvp" class="mantener" novalidate>
         <label>¿Quién confirma?
           <input type="text" id="fQuien" placeholder="Tu nombre completo" required autocomplete="name" />
         </label>
@@ -160,7 +162,7 @@
         <p class="error" id="error" hidden></p>
       </form>
 
-      <div class="gracias" id="gracias" hidden>
+      <div class="gracias mantener" id="gracias" hidden>
         <svg class="ramita" viewBox="0 0 200 40" aria-hidden="true"><use href="#deco-eucalipto"/></svg><img class="ramita-img" alt="" hidden />
         <h3 id="graciasTitulo">¡Gracias!</h3>
         <p id="graciasTexto"></p>

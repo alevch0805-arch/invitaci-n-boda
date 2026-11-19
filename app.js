@@ -205,6 +205,7 @@
   function pintarInvitado() {
     var n = invitado.nombre;
     texto("sobreNombre", n || "Querido invitado");
+    var pcn = document.querySelector(".pc-nombre"); if (pcn) pcn.textContent = n || "";
     texto("saludo", n || "Con mucho cariño");
     if (invitado.pases) {
       var t = invitado.pases === 1 ? "Hemos reservado 1 lugar para ti" : "Hemos reservado " + invitado.pases + " lugares para ustedes";
@@ -284,7 +285,8 @@
     var s = $("sobre");
     if (s.classList.contains("abriendo")) return;
     s.classList.add("abriendo");
-    setTimeout(function () { s.classList.add("abierto"); document.body.classList.remove("bloqueado"); }, s.classList.contains("estilo-cortina") ? 1300 : 900);
+    var espera = s.classList.contains("portada-canva") ? 1100 : s.classList.contains("estilo-cortina") ? 1300 : 900;
+    setTimeout(function () { s.classList.add("abierto"); document.body.classList.remove("bloqueado"); }, espera);
     if (D.musica) { $("audio").play().then(function () { $("btnMusica").classList.add("sonando"); }).catch(function () {}); }
   }
   function cerrarSobre() {
@@ -391,6 +393,8 @@
     img(".mono", mo); b.classList.toggle("con-mono", !!mo.url);
     root.setProperty("--mono-tam", Math.round(120 * (mo.tam || 100) / 100) + "px");
 
+    aplicarCanva(e.canva || {});
+
     // Secciones extra
     ["inicio", "despues-foto1", "despues-itinerario", "antes-confirmacion", "antes-cierre"].forEach(function (pos) { $("extra-" + pos).innerHTML = ""; });
     (e.secciones || []).forEach(function (s, i) {
@@ -409,6 +413,52 @@
         html += '<div class="galeria">' + s.imagenes.map(function (u) { return '<img src="' + esc(u) + '" alt="" loading="lazy" />'; }).join("") + "</div>";
       }
       cont.insertAdjacentHTML("beforeend", html + "</section>");
+    });
+  }
+
+  /* ---------- Fusión con Canva: cada página de Canva reemplaza el diseño de su sección ---------- */
+  var SECCIONES_CANVA = { hero: ".hero", fotos: "#secFoto1", cuenta: '[data-seccion="cuenta"]', lugares: '[data-seccion="lugares"]',
+    itinerario: "#secItinerario", foto2: "#secFoto2", vestimenta: "#secVestimenta", regalos: "#seccionRegalos", rsvp: "#rsvp", cierre: "footer.cierre" };
+  function aplicarCanva(cv) {
+    var pag = cv.paginas || {}, root = document.documentElement.style, s = $("sobre");
+    // Portada
+    var po = pag.portada || {};
+    var conPortada = po.modo === "canva" && po.url;
+    s.classList.toggle("portada-canva", !!conPortada);
+    s.setAttribute("data-trans", cv.transicion || "zoom");
+    if (conPortada) {
+      root.setProperty("--pc-img", 'url("' + po.url + '")');
+      s.querySelector(".pc-texto").textContent = cv.textoPortada || "Toca para abrir";
+      s.querySelector(".pc-nombre").textContent = invitado.nombre || "";
+    }
+    // Secciones
+    Object.keys(SECCIONES_CANVA).forEach(function (k) {
+      var el = document.querySelector(SECCIONES_CANVA[k]); if (!el) return;
+      var p = pag[k] || {}, img = el.querySelector(":scope > .pagina-canva");
+      var extra = el.querySelector(":scope > .canva-extra");
+      if (p.modo === "ocultar") { el.hidden = true; return; }
+      var activa = p.modo === "canva" && p.url;
+      el.classList.toggle("con-canva", !!activa);
+      if (!activa) { if (img) img.remove(); if (extra) extra.remove(); return; }
+      if (!img) { img = document.createElement("img"); img.className = "pagina-canva"; img.alt = ""; el.insertBefore(img, el.firstChild); }
+      if (img.getAttribute("src") !== p.url) img.src = p.url;
+      if (extra) extra.remove();
+      // Lo que debe seguir funcionando encima del diseño de Canva
+      var html = "";
+      if (k === "hero" && invitado.nombre) {
+        html = '<p class="saludo">' + esc(invitado.nombre) + "</p>" + (invitado.pases ? '<p class="pases-hero">' +
+          (invitado.pases === 1 ? "Hemos reservado 1 lugar para ti" : "Hemos reservado " + invitado.pases + " lugares para ustedes") + "</p>" : "");
+      }
+      if (k === "lugares") {
+        html = [[D.ceremonia, "Ceremonia"], [D.recepcion, "Recepción"]].filter(function (x) { return x[0] && (x[0].mapa || x[0].direccion); }).map(function (x) {
+          var l = x[0], m = l.mapa || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((l.lugar || "") + " " + l.direccion);
+          return '<a class="btn-linea" target="_blank" rel="noopener" href="' + esc(m) + '">Cómo llegar · ' + x[1] + "</a>";
+        }).join("");
+      }
+      if (html) {
+        var d = document.createElement("div"); d.className = "canva-extra mantener"; d.innerHTML = html;
+        if (k === "hero") el.insertBefore(d, el.firstChild); else img.insertAdjacentElement("afterend", d);
+      }
     });
   }
 
