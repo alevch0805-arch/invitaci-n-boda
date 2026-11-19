@@ -15,21 +15,23 @@ var CARPETA_RAIZ = "Invitaciones de boda";
 
 // Columnas de "Clientes"
 var CC = { codigo: 1, pareja: 2, contacto: 3, estado: 4, disenar: 5, enviar: 6, ver: 7, carpeta: 8, actualizado: 9, notas: 10, diseno: 11, datos: 12, admin: 13,
-  correo: 14, clavePanel: 15, panel: 16, enviarPanel: 17 };
+  correo: 14, clavePanel: 15, panel: 16, enviarPanel: 17, waNovia: 18, waNovio: 19, panelNovia: 20, panelNovio: 21 };
 var ENC_CLI = ["Código", "Pareja", "WhatsApp del cliente", "Estado del diseño", "Enlace para diseñar", "Enviar al cliente",
   "Ver invitación", "Carpeta (fotos y referencias)", "Última actualización", "Notas", "Diseño (no editar)", "Datos (no editar)", "⭐ Editar como admin",
-  "Correo de la pareja", "Clave del panel (no compartir)", "📱 Panel de la pareja", "Enviar panel"];
+  "Correo de la pareja", "Clave del panel (no compartir)", "📱 Panel de la pareja", "Enviar panel",
+  "WhatsApp de la novia", "WhatsApp del novio", "📲 Panel a la novia", "📲 Panel al novio"];
 var ESTADOS = ["✏️ Diseñando", "📩 Enviado", "✅ Aprobado"];
 
 // Columnas de "Invitados"
 var COL = {
   cliente: 1, codigo: 2, nombre: 3, pases: 4, telefono: 5, enlace: 6, whatsapp: 7,
   estado: 8, asistiran: 9, quien: 10, acompanantes: 11, mensaje: 12,
-  dispositivos: 13, aperturas: 14, alertas: 15, ultima: 16, extra: 17, solicitud: 18, enviada: 19
+  dispositivos: 13, aperturas: 14, alertas: 15, ultima: 16, extra: 17, solicitud: 18, enviada: 19, envia: 20, enviadaPor: 21
 };
+var QUIEN_ENVIA = ["Novia", "Novio", "Cualquiera"];
 var ENC_INV = ["Cliente", "Código", "Nombre del invitado", "Pases", "Teléfono (con lada país)", "Enlace personal",
   "Enviar", "Estado", "Asistirán", "Quién confirmó", "Acompañantes", "Mensaje", "Dispositivos",
-  "Veces abierta", "⚠️ Alertas", "Última actividad", "Lugares extra pedidos", "Solicitud de pases", "Enviada"];
+  "Veces abierta", "⚠️ Alertas", "Última actividad", "Lugares extra pedidos", "Solicitud de pases", "Enviada", "La envía", "Enviada por"];
 
 // Aperturas: Fecha | Cliente | Código | Invitación de | Dispositivo | Equipo | ¿Nuevo?
 // Respuestas: Fecha | Cliente | Código | Invitación de | Pases | Quién | Asiste | Cantidad | Acompañantes | Mensaje | Dispositivo | Equipo | Alertas
@@ -175,6 +177,11 @@ function generarClientes(silencioso) {
     if (!String(cli.getRange(fila, CC.clavePanel).getValue()).trim()) cli.getRange(fila, CC.clavePanel).setValue(claveAleatoria(12));
     var urlPanel = cfg + '$B$1&"panel.html?c="&A' + fila + '&"&k="&O' + fila;
     cli.getRange(fila, CC.panel).setFormula('=IF(OR(A' + fila + '="",O' + fila + '=""),"",HYPERLINK(' + urlPanel + ',"📱 Abrir panel"))');
+    [[CC.panelNovia, "R", "novia", "📲 A la novia"], [CC.panelNovio, "S", "novio", "📲 Al novio"]].forEach(function (x) {
+      var url = cfg + '$B$1&"panel.html?c="&A' + fila + '&"&k="&O' + fila + '&"&soy=' + x[2] + '"';
+      cli.getRange(fila, x[0]).setFormula('=IF(OR(A' + fila + '="",O' + fila + '="",' + x[1] + fila + '=""),"",HYPERLINK("https://wa.me/"&REGEXREPLACE(TO_TEXT(' + x[1] + fila +
+        '),"\\D","")&"?text="&ENCODEURL(SUBSTITUTE(SUBSTITUTE(' + cfg + '$B$7,"{pareja}",B' + fila + '),"{enlace}",' + url + ')),"' + x[3] + '"))');
+    });
     cli.getRange(fila, CC.enviarPanel).setFormula('=IF(OR(A' + fila + '="",O' + fila + '=""),"",HYPERLINK("https://wa.me/"&REGEXREPLACE(TO_TEXT(C' + fila +
       '),"\\D","")&"?text="&ENCODEURL(SUBSTITUTE(SUBSTITUTE(' + cfg + '$B$7,"{pareja}",B' + fila + '),"{enlace}",' + urlPanel + ')),"📲 Enviar panel"))');
   }
@@ -191,10 +198,14 @@ function asegurarEncabezados() {
   var ss = SpreadsheetApp.getActive();
   var cli = ss.getSheetByName(HOJA_CLI), inv = ss.getSheetByName(HOJA_INV), cfg = ss.getSheetByName(HOJA_CFG);
   cli.getRange(1, 1, 1, ENC_CLI.length).setValues([ENC_CLI]); estiloEncabezado(cli, ENC_CLI.length);
-  [[CC.admin, 120], [CC.correo, 200], [CC.clavePanel, 110], [CC.panel, 130], [CC.enviarPanel, 120]].forEach(function (w) { cli.setColumnWidth(w[0], w[1]); });
+  [[CC.admin, 120], [CC.correo, 200], [CC.clavePanel, 110], [CC.panel, 130], [CC.enviarPanel, 120],
+    [CC.waNovia, 150], [CC.waNovio, 150], [CC.panelNovia, 130], [CC.panelNovio, 130]].forEach(function (w) { cli.setColumnWidth(w[0], w[1]); });
+  cli.getRange(2, CC.waNovia, cli.getMaxRows() - 1, 2).setNumberFormat("@").setBackground("#FFFDF8");
   cli.getRange(2, CC.clavePanel, cli.getMaxRows() - 1, 1).setFontColor("#B0A49C");
   inv.getRange(1, 1, 1, ENC_INV.length).setValues([ENC_INV]); estiloEncabezado(inv, ENC_INV.length);
-  [[COL.extra, 110], [COL.solicitud, 140], [COL.enviada, 140]].forEach(function (w) { inv.setColumnWidth(w[0], w[1]); });
+  [[COL.extra, 110], [COL.solicitud, 140], [COL.enviada, 140], [COL.envia, 110], [COL.enviadaPor, 110]].forEach(function (w) { inv.setColumnWidth(w[0], w[1]); });
+  inv.getRange(2, COL.envia, inv.getMaxRows() - 1, 1).setBackground("#FFFDF8")
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(QUIEN_ENVIA, true).setAllowInvalid(false).build());
   inv.setConditionalFormatRules([
     SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$O2<>""').setBackground("#FBE3DC").setRanges([inv.getRange("A2:S")]).build(),
     SpreadsheetApp.newConditionalFormatRule().whenTextContains("Asistirá").setBackground(COLORES.salvia).setRanges([inv.getRange("H2:H")]).build(),
@@ -577,13 +588,13 @@ function objetoInvitado(f) {
     quien: String(f[COL.quien - 1] || ""), acompanantes: String(f[COL.acompanantes - 1] || ""), mensaje: String(f[COL.mensaje - 1] || ""),
     dispositivos: Number(f[COL.dispositivos - 1]) || 0, aperturas: Number(f[COL.aperturas - 1]) || 0, alertas: String(f[COL.alertas - 1] || ""),
     ultima: fechaISO(f[COL.ultima - 1]), extra: Number(f[COL.extra - 1]) || 0, solicitud: String(f[COL.solicitud - 1] || ""),
-    enviada: fechaISO(f[COL.enviada - 1])
+    enviada: fechaISO(f[COL.enviada - 1]), envia: String(f[COL.envia - 1] || ""), enviadaPor: String(f[COL.enviadaPor - 1] || "")
   };
 }
 function invitadosDe(codigoCliente) {
   var inv = SpreadsheetApp.getActive().getSheetByName(HOJA_INV), lista = [];
   if (inv.getLastRow() < 2) return lista;
-  inv.getRange(2, 1, inv.getLastRow() - 1, COL.enviada).getValues().forEach(function (f) {
+  inv.getRange(2, 1, inv.getLastRow() - 1, COL.enviadaPor).getValues().forEach(function (f) {
     if (String(f[0]).toUpperCase() === codigoCliente && f[COL.codigo - 1]) lista.push(objetoInvitado(f));
   });
   return lista;
@@ -612,8 +623,10 @@ function accionPanel(p) {
     var nombre = String(p.nombre || "").trim().slice(0, 120), pases = Math.min(50, Math.max(1, Math.round(Number(p.pases) || 1)));
     if (!nombre) return { ok: false, error: "Falta el nombre" };
     var tel = limpiarTelefono(p.telefono);
+    var envia = QUIEN_ENVIA.indexOf(p.envia) !== -1 ? p.envia : "Cualquiera";
     if (g) {
       inv.getRange(g.fila, COL.nombre, 1, 3).setValues([[nombre, pases, tel]]);
+      inv.getRange(g.fila, COL.envia).setValue(envia);
     } else {
       var usados = {};
       if (inv.getLastRow() > 1) inv.getRange(2, COL.codigo, inv.getLastRow() - 1, 1).getValues().forEach(function (f) { if (f[0]) usados[String(f[0]).toUpperCase()] = true; });
@@ -622,6 +635,7 @@ function accionPanel(p) {
       inv.getRange(fila, 1, 1, 5).setValues([[c.codigo, codigo, nombre, pases, tel]]);
       formulasInvitado(inv, fila);
       inv.getRange(fila, COL.estado).setValue("⏳ Sin abrir");
+      inv.getRange(fila, COL.envia).setValue(envia);
       g = { fila: fila, codigo: codigo };
     }
   } else if (p.accion === "panelBorrar") {
@@ -635,6 +649,7 @@ function accionPanel(p) {
   } else if (p.accion === "panelEnviada") {
     if (!g) return { ok: false, error: "Falta el invitado" };
     inv.getRange(g.fila, COL.enviada).setValue(new Date());
+    if (p.soy === "Novia" || p.soy === "Novio") inv.getRange(g.fila, COL.enviadaPor).setValue(p.soy);
   } else if (p.accion === "panelMensaje") {
     var d = c.datos || {}; d.mensajeWhatsApp = String(p.mensaje || "").slice(0, 1000);
     cli.getRange(c.fila, CC.datos).setValue(JSON.stringify(d));
@@ -648,7 +663,7 @@ function accionPanel(p) {
 
   var g2 = buscarInvitado(g.codigo);
   actualizarInvitado(g2);
-  return { ok: true, invitado: objetoInvitado(inv.getRange(g2.fila, 1, 1, COL.enviada).getValues()[0]) };
+  return { ok: true, invitado: objetoInvitado(inv.getRange(g2.fila, 1, 1, COL.enviadaPor).getValues()[0]) };
 }
 
 /* ================= AVISOS POR CORREO A LA PAREJA ================= */

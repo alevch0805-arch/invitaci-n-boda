@@ -107,3 +107,15 @@ code { background: var(--fondo); padding: 0 4px; border-radius: 4px; font-size: 
 
 .aviso-flotante { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 300; background: var(--texto); color: #fff; padding: .7rem 1.1rem; border-radius: 999px; font-size: .85rem; box-shadow: 0 8px 20px rgba(0,0,0,.2); max-width: calc(100vw - 32px); text-align: center; }
 .aviso-flotante[hidden] { display: none; }
+
+/* ===== Quién envía ===== */
+.top-acciones { display: flex; align-items: center; gap: 8px; flex: none; }
+.chip-soy { border: 1px solid var(--dorado); background: #FFFBEF; color: var(--acento); border-radius: 999px; padding: .5rem .85rem; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.etiqueta { font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); font-weight: 500; margin-bottom: 6px; }
+.segmentos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.segmentos.grandes { grid-template-columns: 1fr 1fr; }
+.segmentos button { border: 1px solid var(--linea); background: #fff; border-radius: 999px; padding: .65rem .4rem; font-size: .85rem; color: var(--texto); }
+.segmentos.grandes button { padding: 1rem .5rem; font-size: 1rem; font-weight: 600; }
+.segmentos button.activo { background: var(--rosa); border-color: var(--rosa); font-weight: 600; }
+.chip.quien { background: #F3EEF7; }
+.chip.por { background: #EEF4EA; }

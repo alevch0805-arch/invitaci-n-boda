@@ -25,7 +25,10 @@
       <h1 id="titulo">Laura &amp; Carlos</h1>
       <p class="top-fecha" id="fechaBoda"></p>
     </div>
-    <button type="button" class="btn-icono" id="btnRecargar" aria-label="Actualizar">↻</button>
+    <div class="top-acciones">
+      <button type="button" class="chip-soy" id="btnSoy">Soy…</button>
+      <button type="button" class="btn-icono" id="btnRecargar" aria-label="Actualizar">↻</button>
+    </div>
   </header>
 
   <main class="contenido">
@@ -50,6 +53,7 @@
       <input type="search" id="buscar" placeholder="Buscar invitado…" aria-label="Buscar invitado" />
       <div class="filtros" id="filtros">
         <button type="button" class="filtro activo" data-filtro="todos">Todos</button>
+        <button type="button" class="filtro" data-filtro="mios" id="filtroMios" hidden>Míos</button>
         <button type="button" class="filtro" data-filtro="sinEnviar">Sin enviar</button>
         <button type="button" class="filtro" data-filtro="pendientes">Sin responder</button>
         <button type="button" class="filtro" data-filtro="si">Asistirán</button>
@@ -92,6 +96,14 @@
           <button type="button" id="fMas" aria-label="Más">+</button>
         </div>
       </label>
+      <div>
+        <p class="etiqueta">¿Quién la envía?</p>
+        <div class="segmentos" id="fEnvia">
+          <button type="button" data-envia="Novia" id="fEnviaNovia">Novia</button>
+          <button type="button" data-envia="Novio" id="fEnviaNovio">Novio</button>
+          <button type="button" data-envia="Cualquiera">Cualquiera</button>
+        </div>
+      </div>
       <label>WhatsApp <span class="opc">(10 dígitos, o con lada de país)</span>
         <input type="tel" id="fTelefono" placeholder="55 1234 5678" inputmode="tel" autocomplete="off" />
       </label>
@@ -117,6 +129,19 @@
         <button type="button" class="btn-principal" id="envioSiguiente">Siguiente →</button>
       </div>
       <button type="button" class="btn-texto" id="envioCerrar">Terminar</button>
+    </div>
+  </div>
+
+  <!-- ¿Quién eres? -->
+  <div class="modal" id="modalSoy" hidden>
+    <div class="modal-caja">
+      <h3>¿Quién eres?</h3>
+      <p class="nota">Así te mostramos tus invitados y las invitaciones salen de tu WhatsApp. Solo se pregunta una vez en este celular.</p>
+      <div class="segmentos grandes">
+        <button type="button" data-soy="Novia" id="soyNovia">Novia</button>
+        <button type="button" data-soy="Novio" id="soyNovio">Novio</button>
+      </div>
+      <button type="button" class="btn-texto" data-soy="">Prefiero ver todo sin elegir</button>
     </div>
   </div>
 

@@ -11,6 +11,13 @@
 
   var E = { pareja: "", novia: "", novio: "", fecha: "", correo: "", mensaje: "", base: "", invitados: [] };
   var filtro = "todos", abiertos = {}, decididas = [];
+  // Quién usa este celular: "Novia", "Novio" o "" (ver todo). Viene del enlace (?soy=novia) o se elige una vez.
+  var claveSoy = "panel_soy_" + cliente;
+  var soy = (function () {
+    var u = (url.get("soy") || "").toLowerCase();
+    if (u === "novia" || u === "novio") { var v = u === "novia" ? "Novia" : "Novio"; try { localStorage.setItem(claveSoy, v); } catch (e) {} return v; }
+    try { return localStorage.getItem(claveSoy); } catch (e) { return null; }
+  })();
 
   /* ---------- Utilidades ---------- */
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -40,6 +47,14 @@
   }
 
   function nombrePareja() { return E.novia && E.novio ? E.novia + " & " + E.novio : E.pareja; }
+  function nombreDe(rol) { return rol === "Novia" ? (E.novia || "Novia") : rol === "Novio" ? (E.novio || "Novio") : "Cualquiera"; }
+  function esMio(inv) { return !soy || !inv.envia || inv.envia === "Cualquiera" || inv.envia === soy; }
+  function pintarSoy() {
+    $("btnSoy").textContent = soy ? "Soy " + nombreDe(soy) + " ▾" : "¿Quién eres? ▾";
+    $("filtroMios").hidden = !soy;
+    $("soyNovia").textContent = "👰 " + nombreDe("Novia"); $("soyNovio").textContent = "🤵 " + nombreDe("Novio");
+    $("fEnviaNovia").textContent = nombreDe("Novia"); $("fEnviaNovio").textContent = nombreDe("Novio");
+  }
   function mensajeDe(inv, plantilla) {
     return (plantilla || E.mensaje || "¡Hola {nombre}! Te compartimos nuestra invitación de boda: {enlace}")
       .replace(/\{nombre\}/g, inv.nombre).replace(/\{pases\}/g, inv.pases).replace(/\{enlace\}/g, inv.enlace).replace(/\{pareja\}/g, nombrePareja());
@@ -82,7 +97,9 @@
       [n.enviadas, "Enviadas"], [n.si, "Confirmaron"], [n.no, "No asistirán"]
     ].map(function (t) { return '<div class="tarjeta ' + (t[2] || "") + '"><b>' + t[0] + "</b><span>" + t[1] + "</span></div>"; }).join("");
 
-    var faltan = L.filter(function (i) { return tipo(i) === "sinEnviar"; }).length;
+    pintarSoy();
+    var faltan = L.filter(function (i) { return tipo(i) === "sinEnviar" && esMio(i); }).length;
+    $("btnEnviarPendientes").firstChild.textContent = soy ? "📲 Enviar mis invitaciones pendientes " : "📲 Enviar a los que faltan ";
     $("numFaltan").textContent = faltan ? "(" + faltan + ")" : "";
     $("btnEnviarPendientes").disabled = !faltan;
 
@@ -125,6 +142,7 @@
     var lista = E.invitados.filter(function (i) {
       var t = tipo(i);
       if (q && i.nombre.toLowerCase().indexOf(q) === -1) return false;
+      if (filtro === "mios") return esMio(i);
       if (filtro === "sinEnviar") return t === "sinEnviar";
       if (filtro === "pendientes") return t !== "si" && t !== "no";
       if (filtro === "si") return t === "si";
@@ -139,7 +157,9 @@
         '<div class="inv-fila" data-abrir><div><div class="inv-nombre">' + esc(i.nombre) + "</div>" +
         '<div class="inv-sub"><span>' + i.pases + (i.pases == 1 ? " lugar" : " lugares") + "</span>" +
         '<span class="chip ' + t + '">' + etiquetas[t] + (t === "si" && i.asistiran !== "" ? " · " + i.asistiran : "") + "</span>" +
-        (sol ? '<span class="chip solicitud">🙋 Pide ' + i.extra + " más</span>" : "") + "</div></div>" +
+        (sol ? '<span class="chip solicitud">🙋 Pide ' + i.extra + " más</span>" : "") +
+        (i.envia && i.envia !== "Cualquiera" ? '<span class="chip quien">' + (i.envia === "Novia" ? "👰 " : "🤵 ") + esc(nombreDe(i.envia)) + "</span>" : "") +
+        (i.enviadaPor && t !== "sinEnviar" ? '<span class="chip por">📤 por ' + esc(nombreDe(i.enviadaPor)) + "</span>" : "") + "</div></div>" +
         '<a class="btn-wa' + (t === "sinEnviar" ? "" : " reenviar") + '" target="_blank" rel="noopener" data-enviar href="' + esc(enlaceWA(i.telefono, mensajeDe(i))) + '">' +
         (t === "sinEnviar" ? "📲 Enviar" : "Reenviar") + "</a></div>" +
         (i.alertas ? '<div class="inv-alerta">' + esc(i.alertas) + "</div>" : "") +
@@ -170,16 +190,18 @@
 
   function marcarEnviada(inv) {
     if (inv.enviada) return;
-    inv.enviada = new Date().toISOString();
+    inv.enviada = new Date().toISOString(); if (soy) inv.enviadaPor = soy;
     if (inv.estado.indexOf("Sin abrir") !== -1) inv.estado = "📤 Enviada";
     setTimeout(pintar, 400);
-    accion({ accion: "panelEnviada", codigo: inv.codigo }).then(function (r) { reemplazar(r.invitado); }).catch(function () {});
+    accion({ accion: "panelEnviada", codigo: inv.codigo, soy: soy || "" }).then(function (r) { reemplazar(r.invitado); }).catch(function () {});
   }
 
   /* ---------- Formulario de invitado ---------- */
-  var editando = null, pases = 1;
+  var editando = null, pases = 1, envia = "Cualquiera";
+  function pintarEnvia() { todos("#fEnvia button").forEach(function (b) { b.classList.toggle("activo", b.dataset.envia === envia); }); }
   function abrirFormulario(inv) {
     editando = inv || null; pases = inv ? inv.pases : 1;
+    envia = inv ? (inv.envia || "Cualquiera") : (soy || "Cualquiera"); pintarEnvia();
     $("tituloModal").textContent = inv ? "Editar invitado" : "Agregar invitado";
     $("fNombre").value = inv ? inv.nombre : ""; $("fTelefono").value = inv ? inv.telefono : "";
     $("fPases").textContent = pases; $("fError").hidden = true; $("fBorrar").hidden = !inv;
@@ -190,7 +212,7 @@
   /* ---------- Envío uno por uno ---------- */
   var cola = [], pos = 0;
   function iniciarEnvio() {
-    cola = E.invitados.filter(function (i) { return tipo(i) === "sinEnviar"; }); pos = 0;
+    cola = E.invitados.filter(function (i) { return tipo(i) === "sinEnviar" && esMio(i); }); pos = 0;
     if (!cola.length) return aviso("Ya enviaste todas 🎉");
     mostrarEnvio(); $("modalEnvio").hidden = false;
   }
@@ -215,6 +237,7 @@
       if (!silencioso || document.activeElement !== $("correo")) $("correo").value = E.correo || "";
       pintar();
       document.body.classList.remove("cargando");
+      if (soy === null && !silencioso) $("modalSoy").hidden = false;
     }).catch(function (e) {
       if (document.body.classList.contains("cargando")) { document.body.classList.remove("cargando"); $("pantallaError").hidden = false; }
       else if (!silencioso) aviso("No se pudo actualizar: " + e.message);
@@ -238,8 +261,9 @@
             alertas: "🟠 Compartida: se abrió en 2 dispositivos\n🔴 Confirmó otra persona: \"Carlos Ruiz\"\n🟡 Pide 2 lugar(es) extra: esperando respuesta de la pareja" }),
           mk("G5H6J", "Tíos Ramírez", 2, "525511112222", "❌ No asistirá", { asistiran: 0, quien: "Rosa Ramírez", enviada: "x" }),
           mk("K7L8M", "Mariana Torres", 1, "525533334444", "👀 Abierta", { enviada: "x", aperturas: 1, dispositivos: 1 }),
-          mk("N9P2Q", "Familia Gómez", 3, "5544445555", "⏳ Sin abrir"),
-          mk("R3S4T", "Daniel y Paola", 2, "", "⏳ Sin abrir")
+          mk("N9P2Q", "Familia Gómez", 3, "5544445555", "⏳ Sin abrir", { envia: "Novia" }),
+          mk("R3S4T", "Daniel y Paola", 2, "", "⏳ Sin abrir", { envia: "Novio" }),
+          mk("U5V6W", "Compañeros de trabajo", 4, "5512121212", "⏳ Sin abrir", { envia: "Novio" })
         ] };
     }
     return JSON.parse(JSON.stringify(demoDatos));
@@ -248,10 +272,10 @@
     var L = demoDatos.invitados, inv = L.find(function (x) { return x.codigo === d.codigo; });
     if (d.accion === "panelGuardar") {
       if (!inv) { inv = datosDemo().invitados[4]; inv.codigo = "N" + Math.random().toString(36).slice(2, 6).toUpperCase(); inv.enlace = demoDatos.base + "?i=" + inv.codigo; inv.estado = "⏳ Sin abrir"; L.push(inv); }
-      inv.nombre = d.nombre; inv.pases = d.pases; inv.telefono = String(d.telefono || "").replace(/\D/g, "");
+      inv.nombre = d.nombre; inv.pases = d.pases; inv.telefono = String(d.telefono || "").replace(/\D/g, ""); inv.envia = d.envia;
     } else if (d.accion === "panelBorrar") { demoDatos.invitados = L.filter(function (x) { return x !== inv; }); return { ok: true }; }
     else if (d.accion === "panelSolicitud") { if (d.decision === "aprobar") { inv.pases += inv.extra; inv.asistiran = inv.pases; } inv.solicitud = d.decision === "aprobar" ? "✅ Aprobada" : "❌ Rechazada"; inv.alertas = inv.alertas.replace(/\n?🟡[^\n]*/, ""); }
-    else if (d.accion === "panelEnviada") { inv.enviada = "x"; if (inv.estado.indexOf("Sin abrir") !== -1) inv.estado = "📤 Enviada"; }
+    else if (d.accion === "panelEnviada") { inv.enviada = "x"; inv.enviadaPor = d.soy; if (inv.estado.indexOf("Sin abrir") !== -1) inv.estado = "📤 Enviada"; }
     else if (d.accion === "panelMensaje") { demoDatos.mensaje = d.mensaje; return { ok: true }; }
     else if (d.accion === "panelCorreo") { demoDatos.correo = d.correo; return { ok: true }; }
     return { ok: true, invitado: JSON.parse(JSON.stringify(inv)) };
@@ -270,6 +294,17 @@
       });
     });
     $("btnAgregar").addEventListener("click", function () { abrirFormulario(null); });
+    todos("#fEnvia button").forEach(function (b) { b.addEventListener("click", function () { envia = b.dataset.envia; pintarEnvia(); }); });
+    $("btnSoy").addEventListener("click", function () { $("modalSoy").hidden = false; });
+    todos("[data-soy]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        soy = b.dataset.soy || null;
+        try { if (soy) localStorage.setItem(claveSoy, soy); else localStorage.setItem(claveSoy, ""); } catch (e) {}
+        $("modalSoy").hidden = true;
+        if (filtro === "mios" && !soy) { filtro = "todos"; todos(".filtro").forEach(function (x) { x.classList.toggle("activo", x.dataset.filtro === "todos"); }); }
+        pintar(); if (soy) aviso("Hola " + nombreDe(soy) + " 💛");
+      });
+    });
     $("fMenos").addEventListener("click", function () { pases = Math.max(1, pases - 1); $("fPases").textContent = pases; });
     $("fMas").addEventListener("click", function () { pases = Math.min(50, pases + 1); $("fPases").textContent = pases; });
     $("fCancelar").addEventListener("click", cerrarFormulario);
@@ -280,7 +315,7 @@
       if (nombre.length < 2) { $("fError").hidden = false; $("fError").textContent = "Escribe el nombre del invitado."; return; }
       if (tel && dig.length < 10) { $("fError").hidden = false; $("fError").textContent = "El WhatsApp debe tener al menos 10 dígitos."; return; }
       var btn = $("fGuardar"); btn.disabled = true; btn.textContent = "Guardando…";
-      accion({ accion: "panelGuardar", codigo: editando ? editando.codigo : "", nombre: nombre, pases: pases, telefono: tel }).then(function (r) {
+      accion({ accion: "panelGuardar", codigo: editando ? editando.codigo : "", nombre: nombre, pases: pases, telefono: tel, envia: envia }).then(function (r) {
         reemplazar(r.invitado); cerrarFormulario(); pintar(); aviso(editando ? "Invitado actualizado" : "Invitado agregado");
       }).catch(function (err) { $("fError").hidden = false; $("fError").textContent = "No se pudo guardar: " + err.message; })
         .finally(function () { btn.disabled = false; btn.textContent = "Guardar"; });

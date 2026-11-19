@@ -163,3 +163,9 @@ Si un invitado con 2 lugares confirma 4, se registran sus **2 lugares** y los ot
 - **Para probar:** usa el menú **💍 Invitaciones → Enviar resumen diario ahora (prueba)**.
 
 **Importante:** la "Clave del panel" de cada pareja es privada. Si la pareja comparte su panel con alguien que no debe, borra esa clave y usa **Generar códigos y enlaces**: se crea una nueva y el enlace anterior deja de funcionar.
+
+### 👰🤵 Quién envía cada invitación
+- En **Clientes** escribe **"WhatsApp de la novia"** y **"WhatsApp del novio"**. Con los botones **📲 A la novia** y **📲 Al novio**, cada uno recibe **su propio enlace del panel**. Ese enlace ya sabe quién es, así que no tienen que elegir.
+- En **Invitados**, la columna **"La envía"** (Novia / Novio / Cualquiera) reparte a los invitados. Puedes precargarlos tú; la pareja puede cambiar nombres, números y quién envía desde su panel.
+- En el panel, cada quien ve **"Enviar mis invitaciones pendientes"** solo con los suyos (y los de "Cualquiera"), y tiene el filtro **"Míos"**.
+- Al enviar, queda registrado **quién la mandó**: columna **"Enviada por"** en la hoja, y "📤 por Brisa" en el panel.
