@@ -423,8 +423,6 @@ body.modo-canva .hero { min-height: 0; padding: 72px 16px; }
   display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 50%; bottom: max(28px, env(safe-area-inset-bottom));
   transform: translateX(-50%); z-index: 2; text-align: center; transition: opacity .4s; width: max-content; max-width: 90vw;
 }
-.pc-nombre { font-family: var(--script); font-size: 2rem; color: var(--moca); text-shadow: 0 1px 8px rgba(255,255,255,.8); }
-.pc-nombre:empty { display: none; }
 .pc-texto {
   background: rgba(255,255,255,.88); color: var(--moca); border: 1px solid var(--dorado); border-radius: 999px; padding: .55rem 1.3rem;
   font-size: .72rem; letter-spacing: .25em; text-transform: uppercase; animation: latido 2s ease-in-out infinite; box-shadow: 0 6px 18px rgba(0,0,0,.12);

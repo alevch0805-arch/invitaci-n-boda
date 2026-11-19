@@ -205,7 +205,6 @@
   function pintarInvitado() {
     var n = invitado.nombre;
     texto("sobreNombre", n || "Querido invitado");
-    var pcn = document.querySelector(".pc-nombre"); if (pcn) pcn.textContent = n || "";
     texto("saludo", n || "Con mucho cariño");
     if (invitado.pases) {
       var t = invitado.pases === 1 ? "Hemos reservado 1 lugar para ti" : "Hemos reservado " + invitado.pases + " lugares para ustedes";
@@ -441,7 +440,6 @@
     if (conPortada) {
       root.setProperty("--pc-img", 'url("' + po.url + '")');
       s.querySelector(".pc-texto").textContent = cv.textoPortada || "Toca para abrir";
-      s.querySelector(".pc-nombre").textContent = invitado.nombre || "";
     }
     // Secciones
     Object.keys(SECCIONES_CANVA).forEach(function (k) {
